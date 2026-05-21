@@ -119,6 +119,8 @@ function ChatApp() {
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [thumbs, setThumbs] = useState<Record<string, 'up' | 'down'>>({})
+  const [isUpgrading, setIsUpgrading] = useState(false)
+  const [upgradeError, setUpgradeError] = useState<string | null>(null)
 
   const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -244,14 +246,27 @@ function ChatApp() {
 
   async function handleUpgrade() {
     if (isGuest) { setShowSignInModal(true); return }
-    const token = await getToken()
-    if (!token) return
-    const res = await fetch('/api/create-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
+    if (isUpgrading) return
+    setUpgradeError(null)
+    setIsUpgrading(true)
+    try {
+      const token = await getToken()
+      if (!token) { setUpgradeError('Please sign in again to upgrade.'); return }
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setUpgradeError(data.error || 'Could not start checkout. Please try again.')
+      }
+    } catch {
+      setUpgradeError('Network error — please check your connection and try again.')
+    } finally {
+      setIsUpgrading(false)
+    }
   }
 
   async function handleLogout() {
@@ -674,7 +689,14 @@ function ChatApp() {
                       />
                     </div>
                   </div>
-                  <button className="upgrade-btn" onClick={handleUpgrade}>↑ Upgrade to Pro</button>
+                  <button className="upgrade-btn" onClick={handleUpgrade} disabled={isUpgrading}>
+                    {isUpgrading ? '...' : '↑ Upgrade to Pro'}
+                  </button>
+                  {upgradeError && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--danger)', marginTop: 6, lineHeight: 1.4 }}>
+                      {upgradeError}
+                    </div>
+                  )}
                 </>
               )
             ) : null}
@@ -908,7 +930,14 @@ function ChatApp() {
               You&apos;ve used all 10 free messages today.<br />
               Upgrade to Pro for unlimited access — just $5/month.
             </div>
-            <button className="limit-upgrade-btn" onClick={handleUpgrade}>Upgrade to Pro — $5/month</button>
+            <button className="limit-upgrade-btn" onClick={handleUpgrade} disabled={isUpgrading}>
+              {isUpgrading ? 'Loading...' : 'Upgrade to Pro — $5/month'}
+            </button>
+            {upgradeError && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--danger)', margin: '8px 0' }}>
+                {upgradeError}
+              </div>
+            )}
             <button className="limit-dismiss" onClick={() => setShowLimitModal(false)}>Maybe later</button>
           </div>
         </div>

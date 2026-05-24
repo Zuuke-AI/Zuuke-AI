@@ -27,6 +27,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Zuuke — AI PC Build Assistant',
   description: 'Tell Zuuke your budget and use case. Get a complete, compatible, optimized PC build in seconds.',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

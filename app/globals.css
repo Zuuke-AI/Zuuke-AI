@@ -537,6 +537,14 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 .signin-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: var(--mist); font-size: 20px; cursor: pointer; line-height: 1; padding: 4px 8px; }
 .signin-close:hover { color: var(--white); }
 
+/* ── Touch / mobile: restore native cursor ── */
+@media (hover: none), (pointer: coarse) {
+  body, a, button, [role="button"],
+  .btn-primary, .btn-secondary, .price-btn,
+  .sug-card, .chat-item, .send-btn { cursor: auto !important; }
+  .cursor-dot, .cursor-ring { display: none !important; }
+}
+
 /* Responsive */
 /* ── 900px: tablet ── */
 @media (max-width: 900px) {

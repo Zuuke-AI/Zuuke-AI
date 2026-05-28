@@ -6,10 +6,114 @@ import { useRouter } from 'next/navigation'
 import BgCanvas from '@/components/BgCanvas'
 import { createBrowserClient } from '@/lib/supabase'
 
+// ── Quiz Data ─────────────────────────────────────────────────────
+
+const BUDGETS = [
+  { label: 'Under $600', val: 'under $600', note: 'Budget gaming' },
+  { label: '$600 – $1,000', val: '$600 to $1,000', note: 'Solid performance' },
+  { label: '$1,000 – $1,500', val: '$1,000 to $1,500', note: 'High-end gaming' },
+  { label: '$1,500 – $2,500', val: '$1,500 to $2,500', note: '1440p / creator' },
+  { label: '$2,500+', val: 'over $2,500', note: 'No compromises' },
+]
+
+const USE_CASES = [
+  { icon: '🎮', label: 'Gaming', val: 'gaming', desc: 'FPS, AAA, Esports' },
+  { icon: '🎬', label: 'Video Editing', val: 'video editing and content creation', desc: 'Premiere, DaVinci' },
+  { icon: '📡', label: 'Streaming', val: 'gaming and live streaming', desc: 'Twitch, OBS, YouTube' },
+  { icon: '🎨', label: '3D / VFX', val: '3D rendering and visual effects', desc: 'Blender, Cinema 4D' },
+  { icon: '🤖', label: 'AI / ML', val: 'AI and machine learning', desc: 'PyTorch, TensorFlow' },
+  { icon: '⚡', label: 'All-Around', val: 'all-around work and gaming', desc: 'Work + play balance' },
+]
+
+const GOALS = [
+  { icon: '⚡', label: 'Max FPS', val: 'prioritizing maximum gaming FPS' },
+  { icon: '💰', label: 'Best Value', val: 'maximizing performance per dollar' },
+  { icon: '🔮', label: 'Future-Proof', val: 'future-proofing for the next 4+ years' },
+]
+
+// ── Example Builds ────────────────────────────────────────────────
+
+const BUILDS = [
+  {
+    tier: 'BUDGET',
+    color: 'var(--cyan)',
+    name: 'Budget Beast',
+    price: '$749',
+    badge: null,
+    specs: [
+      { l: 'GPU', v: 'RTX 4060' },
+      { l: 'CPU', v: 'Ryzen 5 7600' },
+      { l: 'RAM', v: '16GB DDR5-5600' },
+    ],
+    tags: ['1080p Gaming', 'CS2', 'Valorant', 'Fortnite'],
+    perf: '240+ FPS in CS2',
+    score: 88,
+    reason: 'Maximizes competitive FPS at 1080p without overspending. Ideal for esports-focused players on a tight budget.',
+    promptHint: 'Build me a budget gaming PC under $750, prioritizing maximum FPS at 1080p for competitive games like CS2 and Valorant.',
+  },
+  {
+    tier: 'ELITE',
+    color: 'var(--orange)',
+    name: '1440p Powerhouse',
+    price: '$1,349',
+    badge: '★ Most Popular',
+    specs: [
+      { l: 'GPU', v: 'RTX 4070 Super' },
+      { l: 'CPU', v: 'Ryzen 7 7700X' },
+      { l: 'RAM', v: '32GB DDR5-6000' },
+    ],
+    tags: ['1440p AAA', 'Streaming Ready', 'Cyberpunk', 'Elden Ring'],
+    perf: '165+ FPS in AAA titles',
+    score: 95,
+    reason: 'The sweet spot — flawless 1440p gaming with headroom for streaming, future upgrades, and creative work.',
+    promptHint: 'Build me a 1440p gaming PC for $1,300 to $1,400, good for AAA games and streaming on the side.',
+  },
+  {
+    tier: 'PRO',
+    color: '#a855f7',
+    name: 'Creator Rig',
+    price: '$1,849',
+    badge: null,
+    specs: [
+      { l: 'GPU', v: 'RTX 4070 Ti Super' },
+      { l: 'CPU', v: 'Ryzen 9 7900X' },
+      { l: 'RAM', v: '64GB DDR5-6000' },
+    ],
+    tags: ['4K Editing', 'Premiere Pro', 'Blender', 'AI Workflows'],
+    perf: '4K H.265 export in 6 min',
+    score: 96,
+    reason: 'Built for serious creators. CUDA-accelerated exports, massive RAM for multitasking, GPU with future 4K gaming headroom.',
+    promptHint: 'Build me a creator workstation for $1,800 to $1,900, optimized for 4K video editing in Premiere Pro and DaVinci Resolve.',
+  },
+]
+
+// ── Comparison Data ───────────────────────────────────────────────
+
+const COMPARE_FEATURES = [
+  'Personalized to your build',
+  'Instant results (< 30s)',
+  'AI reasoning for every part',
+  'Compatibility guaranteed',
+  'Budget optimization',
+  'Explains trade-offs',
+]
+
+const COMPARE_SOURCES = [
+  { name: 'Reddit', scores: [false, false, false, false, false, false] },
+  { name: 'PCPartPicker', scores: [false, false, false, true, false, false] },
+  { name: 'YouTube', scores: [false, false, false, false, false, false] },
+  { name: 'Zuuke', scores: [true, true, true, true, true, true], highlight: true },
+]
+
+// ── Component ─────────────────────────────────────────────────────
+
 export default function LandingPage() {
   const router = useRouter()
   const [userName, setUserName] = useState<string | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const [budget, setBudget] = useState<string | null>(null)
+  const [useCase, setUseCase] = useState<string | null>(null)
+  const [goal, setGoal] = useState<string | null>(null)
   const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -42,18 +146,43 @@ export default function LandingPage() {
                 setTimeout(() => c.classList.add('visible'), i * 80)
               })
             }
+            if (e.target.classList.contains('builds-grid')) {
+              e.target.querySelectorAll('.build-card-v2').forEach((c, i) => {
+                setTimeout(() => c.classList.add('visible'), i * 120)
+              })
+            }
+            if (e.target.classList.contains('why-cols')) {
+              e.target.querySelectorAll('.why-col').forEach((c, i) => {
+                setTimeout(() => c.classList.add('visible'), i * 80)
+              })
+            }
           }
         })
       },
-      { threshold: 0.12 }
+      { threshold: 0.08 }
     )
-    document.querySelectorAll('.step,.terminal,.feature-card,.demo-chat,.price-card').forEach((el) =>
-      observer.observe(el)
-    )
+    document.querySelectorAll(
+      '.feature-card,.build-card-v2,.price-card,.builder-inner,.builds-grid,.why-cols'
+    ).forEach((el) => observer.observe(el))
     const fg = document.querySelector('.features-grid')
     if (fg) observer.observe(fg)
     return () => observer.disconnect()
   }, [])
+
+  function buildPrompt() {
+    const parts: string[] = []
+    if (useCase) parts.push(`Build me a ${useCase} PC`)
+    else parts.push('Build me a PC')
+    if (budget) parts.push(` with a budget of ${budget}`)
+    if (goal) parts.push(`, ${goal}`)
+    parts.push('. Provide a complete parts list with prices, compatibility notes, and AI reasoning for every component choice.')
+    return parts.join('')
+  }
+
+  function handleBuildQuiz() {
+    const prompt = buildPrompt()
+    router.push(`/chat?prompt=${encodeURIComponent(prompt)}`)
+  }
 
   async function handleUpgrade() {
     if (isUpgrading) return
@@ -78,31 +207,21 @@ export default function LandingPage() {
     }
   }
 
+  const canBuild = !!(budget || useCase || goal)
+
   return (
     <>
-      <BgCanvas opacity={0.6} particleCount={120} connectDistance={120} />
+      <BgCanvas opacity={0.5} particleCount={100} connectDistance={120} />
 
       {/* ── Promo Banner ── */}
-      <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        background: 'linear-gradient(90deg, var(--orange) 0%, #ff9a4d 50%, var(--orange) 100%)',
-        backgroundSize: '200% 100%',
-        animation: 'promoBg 4s ease infinite',
-        padding: '9px 16px',
-        textAlign: 'center',
-        fontFamily: 'var(--font-mono)',
-        fontSize: 11,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        color: '#000',
-        fontWeight: 700,
-      }}>
+      <div className="promo-banner">
         🎉 Limited Time — First Month Free on Pro · Cancel anytime
-        <button onClick={handleUpgrade} style={{ marginLeft: 14, color: '#000', textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', fontWeight: 700 }}>
+        <button onClick={handleUpgrade} className="promo-link-btn">
           {isUpgrading ? 'Loading...' : 'Claim →'}
         </button>
       </div>
 
+      {/* ── Nav ── */}
       <nav ref={navRef} className="nav" style={{ top: 37 }}>
         <Link href="/" className="nav-logo">
           <div className="nav-logo-mark">
@@ -114,7 +233,7 @@ export default function LandingPage() {
           <span className="nav-wordmark">ZUUKE<span>.</span></span>
         </Link>
         <div className="nav-links">
-          <a href="#how-it-works">How It Works</a>
+          <a href="#builder">Build Yours</a>
           <a href="#features">Features</a>
           <a href="#pricing">Pricing</a>
           <Link href="/about">About Us</Link>
@@ -128,86 +247,281 @@ export default function LandingPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link href="/auth?mode=login" className="nav-login">
-              Log In
-            </Link>
-            <Link href="/chat" className="nav-cta"><span>Start Building →</span></Link>
+            <Link href="/auth?mode=login" className="nav-login">Log In</Link>
+            <Link href="/chat" className="nav-cta"><span>Build Free →</span></Link>
           </div>
         )}
       </nav>
 
-      <section className="hero">
-        <div className="hero-eyebrow">AI-Powered · PC Build Intelligence · Real-Time</div>
+      {/* ── 1. HERO ── */}
+      <section className="hero" style={{ paddingTop: 'clamp(120px, 15vw, 180px)' }}>
+        <div className="hero-eyebrow">AI-Powered · Personalized · Instant</div>
         <h1 className="hero-title">
-          <span className="line-1">BUILD YOUR</span>
-          <span className="line-2">PERFECT RIG</span>
-          <span className="line-3">INSTANTLY</span>
+          <span className="line-1">YOUR PERFECT</span>
+          <span className="line-2">PC BUILD</span>
+          <span className="line-3">IN SECONDS.</span>
         </h1>
-        <p className="hero-sub">Tell Zuuke your budget and use case. Get a complete, compatible, optimized PC build in seconds — not hours of research.</p>
+        <p className="hero-sub">
+          Tell Zuuke your budget, games, and goals. Get a fully personalized, compatibility-verified PC build recommendation in under 30 seconds — not 30 hours of Reddit research.
+        </p>
         <div className="hero-actions">
           <Link href="/chat" className="btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
-            Start Building Free
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            Build My PC Free
           </Link>
-          <a href="#how-it-works" className="btn-secondary">See How It Works</a>
+          <a href="#builds" className="btn-secondary">See Example Builds</a>
+        </div>
+
+        {/* Trust indicators */}
+        <div className="trust-row">
+          {[
+            { dot: 'cyan', text: 'Compatibility Verified' },
+            { dot: 'cyan', text: 'Personalized to You' },
+            { dot: 'cyan', text: 'Budget Optimized' },
+            { dot: 'cyan', text: 'AI Reasoning Included' },
+          ].map((t) => (
+            <div className="trust-chip" key={t.text}>
+              <div className="trust-chip-dot" />
+              {t.text}
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="how-it-works" id="how-it-works" style={{ position: 'relative', zIndex: 1 }}>
-        <div className="section-label">Process</div>
-        <h2 className="section-title">THREE STEPS.<br />ONE PERFECT BUILD.</h2>
-        <div className="hiw-grid">
-          <div className="hiw-steps">
-            {[
-              { num: '01', title: 'Tell Us Your Mission', text: 'Gaming at 1440p? Video editing? Streaming? Give Zuuke your budget and use case in plain English. No technical knowledge needed.' },
-              { num: '02', title: 'AI Analyzes & Optimizes', text: 'Zuuke checks compatibility, balances performance across components, avoids bottlenecks, and maximizes value for every dollar in your budget.' },
-              { num: '03', title: 'Get Your Complete Build', text: 'A full parts list with prices, purchase links, and explanations for every choice. Ask follow-up questions, swap parts, adjust budget — all in real time.' },
-            ].map((s) => (
-              <div className="step" key={s.num}>
-                <div className="step-num">{s.num}</div>
-                <div><div className="step-title">{s.title}</div><div className="step-text">{s.text}</div></div>
+      {/* ── 2. INTERACTIVE BUILDER ── */}
+      <section className="builder-section" id="builder" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="builder-inner">
+          <div className="section-label">Quick Builder</div>
+          <h2 className="section-title">YOUR BUILD.<br /><span style={{ color: 'var(--cyan)' }}>30 SECONDS.</span></h2>
+          <p className="builder-sub">Select your preferences below and let AI generate your personalized build.</p>
+
+          {/* Step 1: Budget */}
+          <div className="builder-step">
+            <div className="builder-step-label">
+              <span className="builder-step-num">01</span>
+              What&apos;s your budget?
+            </div>
+            <div className="budget-pills">
+              {BUDGETS.map((b) => (
+                <button
+                  key={b.val}
+                  className={`budget-pill${budget === b.val ? ' active' : ''}`}
+                  onClick={() => setBudget(budget === b.val ? null : b.val)}
+                >
+                  <span className="bp-main">{b.label}</span>
+                  <span className="bp-sub">{b.note}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Step 2: Use Case */}
+          <div className="builder-step">
+            <div className="builder-step-label">
+              <span className="builder-step-num">02</span>
+              What will you use it for?
+            </div>
+            <div className="usecase-grid">
+              {USE_CASES.map((u) => (
+                <button
+                  key={u.val}
+                  className={`usecase-card${useCase === u.val ? ' active' : ''}`}
+                  onClick={() => setUseCase(useCase === u.val ? null : u.val)}
+                >
+                  <span className="uc-icon">{u.icon}</span>
+                  <span className="uc-label">{u.label}</span>
+                  <span className="uc-desc">{u.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Step 3: Goal */}
+          <div className="builder-step">
+            <div className="builder-step-label">
+              <span className="builder-step-num">03</span>
+              What matters most?
+            </div>
+            <div className="goal-pills">
+              {GOALS.map((g) => (
+                <button
+                  key={g.val}
+                  className={`goal-pill${goal === g.val ? ' active' : ''}`}
+                  onClick={() => setGoal(goal === g.val ? null : g.val)}
+                >
+                  <span>{g.icon}</span>
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="builder-cta-row">
+            <button
+              className={`builder-cta-btn${canBuild ? ' ready' : ''}`}
+              onClick={handleBuildQuiz}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              {canBuild ? 'Generate My Build →' : 'Build My PC →'}
+            </button>
+            <span className="builder-cta-note">Free · No account needed · Results in seconds</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3. EXAMPLE BUILDS ── */}
+      <section className="builds-section" id="builds" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="section-label">Example Builds</div>
+        <h2 className="section-title">REAL BUILDS.<br />REAL REASONING.</h2>
+        <p style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--mist)', maxWidth: 500, margin: '0 auto 52px', lineHeight: 1.6 }}>
+          Every Zuuke build includes AI reasoning explaining exactly why each part was chosen.
+        </p>
+
+        <div className="builds-grid">
+          {BUILDS.map((b) => (
+            <div className="build-card-v2" key={b.name}>
+              {b.badge && (
+                <div className="build-popular-badge" style={{ color: b.color, borderColor: b.color + '55' }}>
+                  {b.badge}
+                </div>
+              )}
+              <div className="build-tier-tag" style={{ color: b.color }}>
+                {b.tier}
+              </div>
+              <div className="build-card-top">
+                <div className="build-card-name">{b.name}</div>
+                <div className="build-card-price" style={{ color: b.color }}>{b.price}</div>
+              </div>
+
+              <div className="build-specs-list">
+                {b.specs.map((s) => (
+                  <div className="build-spec-row" key={s.l}>
+                    <span className="bsr-l">{s.l}</span>
+                    <span className="bsr-v">{s.v}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="build-perf-chip" style={{ borderColor: b.color + '44', color: b.color }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                {b.perf}
+              </div>
+
+              <div className="build-tags-row">
+                {b.tags.map((t) => (
+                  <span className="build-tag" key={t}>{t}</span>
+                ))}
+              </div>
+
+              <div className="build-score-section">
+                <div className="build-score-label">
+                  <span>AI Confidence</span>
+                  <span style={{ color: b.color, fontWeight: 700 }}>{b.score}/100</span>
+                </div>
+                <div className="build-score-track">
+                  <div className="build-score-fill" style={{ width: `${b.score}%`, background: b.color }} />
+                </div>
+              </div>
+
+              <div className="build-reason-box">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: b.color, flexShrink: 0, marginTop: 2 }}>
+                  <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+                </svg>
+                <span>{b.reason}</span>
+              </div>
+
+              <button
+                className="build-try-btn"
+                style={{ borderColor: b.color + '55', color: b.color }}
+                onClick={() => router.push(`/chat?prompt=${encodeURIComponent(b.promptHint)}`)}
+              >
+                Build Like This →
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 4. WHY ZUUKE ── */}
+      <section className="why-section" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="section-label">The Difference</div>
+        <h2 className="section-title">WHY ZUUKE BEATS<br />THE OLD WAY.</h2>
+        <p style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--mist)', maxWidth: 480, margin: '0 auto 52px', lineHeight: 1.6 }}>
+          Hours of Reddit research, conflicting YouTube advice, and random PCPartPicker lists are the old way. This is the new one.
+        </p>
+
+        <div className="why-table-wrap">
+          {/* Header row */}
+          <div className="why-table">
+            <div className="why-table-head">
+              <div className="why-feature-col" />
+              {COMPARE_SOURCES.map((s) => (
+                <div key={s.name} className={`why-source-col${s.highlight ? ' zuuke' : ''}`}>
+                  {s.highlight ? <span style={{ color: 'var(--cyan)' }}>ZUUKE</span> : s.name}
+                </div>
+              ))}
+            </div>
+            {COMPARE_FEATURES.map((feat, fi) => (
+              <div key={feat} className={`why-table-row${fi % 2 === 0 ? ' alt' : ''}`}>
+                <div className="why-feature-col">{feat}</div>
+                {COMPARE_SOURCES.map((s) => (
+                  <div key={s.name} className={`why-source-col${s.highlight ? ' zuuke' : ''}`}>
+                    {s.scores[fi] ? (
+                      <span className="why-check">✓</span>
+                    ) : (
+                      <span className="why-cross">✗</span>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-          <div className="terminal">
-            <div className="terminal-bar">
-              <div className="t-dot" /><div className="t-dot" /><div className="t-dot" />
-              <div className="t-title">zuuke_ai — build_session</div>
-            </div>
-            <div className="terminal-body">
-              <div><span className="t-prompt">user@zuuke:~$ </span><span className="t-input">Build me a gaming PC for $1,200. Competitive FPS, high FPS at 1080p.</span></div>
-              <br />
-              <div className="t-response">
-                <span className="t-key">Analyzing</span> use case...<br />
-                <span className="t-key">Priority:</span> <span className="t-val">CPU + GPU for high FPS</span><br />
-                <span className="t-key">Bottleneck check:</span> <span className="t-val">passed ✓</span><br />
-                <span className="t-key">Compatibility:</span> <span className="t-val">all parts verified ✓</span><br /><br />
-                <span className="t-key">CPU   →</span> <span className="t-val">AMD Ryzen 5 7600X</span>   $229<br />
-                <span className="t-key">GPU   →</span> <span className="t-val">RTX 4070 Super</span>       $599<br />
-                <span className="t-key">RAM   →</span> <span className="t-val">32GB DDR5-6000</span>        $89<br />
-                <span className="t-key">MOBO  →</span> <span className="t-val">B650 Tomahawk</span>         $179<br />
-                <span className="t-key">SSD   →</span> <span className="t-val">WD Black SN850X 1TB</span>  $89<br />
-                <span className="t-key">PSU   →</span> <span className="t-val">Corsair RM750e</span>        $89<br />
-                ──────────────────────────<br />
-                <span className="t-key">TOTAL →</span> <span className="t-val">$1,174</span> <span style={{ color: '#6b7f96' }}>($26 under budget)</span><span className="t-cursor" />
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
+      {/* ── 5. FEATURES ── */}
       <section className="features" id="features" style={{ position: 'relative', zIndex: 1 }}>
         <div className="features-inner">
           <div className="section-label">Capabilities</div>
           <h2 className="section-title">BUILT FOR<br />BUILDERS.</h2>
           <div className="features-grid">
             {[
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>, title: 'Full Build Generation', text: 'CPU, GPU, motherboard, RAM, storage, PSU, case — every component selected, explained, and optimized for your exact use case and budget.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>, title: 'Bottleneck Detection', text: 'Zuuke automatically flags and eliminates CPU-GPU bottlenecks, ensuring every dollar contributes to real-world performance gains.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, title: 'Upgrade Path Planning', text: "Already have parts? Tell Zuuke what you own. It'll build around your existing components and map your future upgrade path." },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>, title: 'Multi-Use Case Tuning', text: "Gaming, video editing, 3D rendering, streaming, workstation — Zuuke understands each workload's unique hardware demands." },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>, title: 'Budget Optimization', text: 'From $400 budget builds to $5,000 enthusiast rigs, Zuuke extracts maximum performance per dollar at every price point.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, title: 'Conversational Refinement', text: "Not happy with a part? Just say so. Swap the GPU, change the case, add peripherals — Zuuke adapts instantly." },
+              {
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>,
+                title: 'Full Build Generation',
+                text: 'CPU, GPU, motherboard, RAM, storage, PSU, case — every component selected, explained, and optimized. No vague suggestions.',
+              },
+              {
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>,
+                title: 'Bottleneck Detection',
+                text: 'Zuuke flags and eliminates CPU-GPU bottlenecks before they happen, ensuring every dollar contributes to real performance.',
+              },
+              {
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+                title: 'Upgrade Path Planning',
+                text: "Already own parts? Tell Zuuke what you have. It builds around them and maps your future upgrade path with exact part suggestions.",
+              },
+              {
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>,
+                title: 'Multi-Use Case Tuning',
+                text: "Gaming, editing, 3D rendering, streaming, AI workloads — Zuuke understands each workload's unique hardware demands.",
+              },
+              {
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+                title: 'Budget Optimization',
+                text: 'From $400 builds to $5,000 rigs, Zuuke squeezes maximum performance out of every dollar at every price point.',
+              },
+              {
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                title: 'AI Reasoning Included',
+                text: "Every recommendation explains the why — trade-offs, alternatives considered, and exactly what you gain by choosing each part.",
+              },
             ].map((f) => (
               <div className="feature-card" key={f.title}>
                 <div className="feature-icon">{f.icon}</div>
@@ -219,39 +533,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="demo-section" style={{ position: 'relative', zIndex: 1 }}>
-        <div className="section-label">Live Preview</div>
-        <h2 className="section-title">SEE ZUUKE<br />IN ACTION.</h2>
-        <div className="demo-chat">
-          <div className="demo-chat-bar">
-            <div className="demo-chat-avatar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="3" width="20" height="14" rx="1"/><path d="M8 21h8M12 17v4"/></svg></div>
-            <div className="demo-chat-name">ZUUKE AI — PC BUILD ASSISTANT</div>
-            <div className="demo-status"><div className="demo-dot" />Online</div>
-          </div>
-          <div className="demo-messages">
-            <div className="demo-msg user">
-              <div className="demo-msg-avatar">YOU</div>
-              <div className="demo-bubble">I want to build a PC for video editing and occasional gaming. Budget is $2,000. I edit 4K footage in Premiere Pro.</div>
-            </div>
-            <div className="demo-msg ai">
-              <div className="demo-msg-avatar">AI</div>
-              <div className="demo-bubble">
-                Perfect use case for a balanced workstation-gaming build. For 4K Premiere Pro, I&apos;ll prioritize a fast CPU with many cores, 64GB RAM, and a GPU with strong CUDA performance.
-                <div className="part-list">
-                  <div className="part-item"><span className="part-name">AMD Ryzen 9 7900X (12-core)</span><span className="part-price">$399</span></div>
-                  <div className="part-item"><span className="part-name">NVIDIA RTX 4070 Ti Super</span><span className="part-price">$599</span></div>
-                  <div className="part-item"><span className="part-name">64GB DDR5-6000 (2×32GB)</span><span className="part-price">$169</span></div>
-                  <div className="part-item"><span className="part-name">ASUS ProArt X670E-Creator</span><span className="part-price">$329</span></div>
-                  <div className="part-item"><span className="part-name">2TB WD Black SN850X NVMe</span><span className="part-price">$149</span></div>
-                  <div className="part-item"><span className="part-name">Fractal Design North + 850W PSU</span><span className="part-price">$189</span></div>
-                  <div className="part-total"><span className="part-name">Total</span><span className="part-price">$2,034</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      {/* ── 6. PRICING ── */}
       <section className="pricing" id="pricing" style={{ position: 'relative', zIndex: 1 }}>
         <div className="pricing-inner">
           <div className="section-label" style={{ justifyContent: 'center' }}>Pricing</div>
@@ -265,9 +547,13 @@ export default function LandingPage() {
               <div className="price-amount">$<span>0</span></div>
               <div className="price-period">forever free</div>
               <ul className="price-features">
-                <li>10 messages per day</li><li>Full build generation</li><li>Compatibility checking</li>
-                <li>Amazon affiliate links</li><li className="dim">Saved build history</li>
-                <li className="dim">Price drop alerts</li><li className="dim">Priority responses</li>
+                <li>10 messages per day</li>
+                <li>Full build generation</li>
+                <li>Compatibility checking</li>
+                <li>Amazon affiliate links</li>
+                <li className="dim">Saved build history</li>
+                <li className="dim">Price drop alerts</li>
+                <li className="dim">Priority responses</li>
               </ul>
               <Link href="/chat" className="price-btn outline">Start Building</Link>
             </div>
@@ -275,16 +561,25 @@ export default function LandingPage() {
               <div className="price-badge" style={{ background: 'var(--orange)', color: '#000' }}>🎉 1 Month Free</div>
               <div className="price-plan">Pro Builder</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <div className="price-amount" style={{ textDecoration: 'line-through', opacity: 0.4, fontSize: '1.6rem' }}>$<span style={{ fontSize: '2.4rem' }}>5</span></div>
+                <div className="price-amount" style={{ textDecoration: 'line-through', opacity: 0.35 }}>$<span>5</span></div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 52, color: 'var(--orange)', letterSpacing: '0.02em', lineHeight: 1 }}>FREE</div>
               </div>
               <div className="price-period">first month · then $5/mo</div>
               <ul className="price-features">
-                <li>Unlimited messages</li><li>Full build generation</li><li>Compatibility checking</li>
-                <li>Amazon affiliate links</li><li>Saved build history</li>
-                <li>Price drop alerts</li><li>Priority responses</li>
+                <li>Unlimited messages</li>
+                <li>Full build generation</li>
+                <li>Compatibility checking</li>
+                <li>Amazon affiliate links</li>
+                <li>Saved build history</li>
+                <li>Price drop alerts</li>
+                <li>Priority responses</li>
               </ul>
-              <button onClick={handleUpgrade} disabled={isUpgrading} className="price-btn filled" style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.35)', cursor: 'pointer' }}>
+              <button
+                onClick={handleUpgrade}
+                disabled={isUpgrading}
+                className="price-btn filled"
+                style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.35)', cursor: 'pointer', border: 'none' }}
+              >
                 {isUpgrading ? 'Loading...' : 'Claim Free Month →'}
               </button>
             </div>
@@ -292,21 +587,31 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── 7. FINAL CTA ── */}
       <section className="final-cta" style={{ position: 'relative', zIndex: 1 }}>
-        <div className="final-cta-title">YOUR BUILD.<br /><span className="accent">30 SECONDS.</span></div>
-        <p>Stop spending days on spreadsheets and forum posts. Let Zuuke spec your perfect PC right now — for free.</p>
+        <div className="final-cta-eyebrow">Ready to build?</div>
+        <div className="final-cta-title">
+          STOP RESEARCHING.<br />
+          <span className="accent">START BUILDING.</span>
+        </div>
+        <p>Thousands of hours of PC building expertise distilled into 30 seconds. Free to use. No account required.</p>
         <Link href="/chat" className="btn-primary" style={{ fontSize: 15, padding: '18px 52px' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
-          Build My PC Now
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          Build My PC Now — Free
         </Link>
       </section>
 
+      {/* ── Footer ── */}
       <footer style={{ position: 'relative', zIndex: 1 }}>
         <div className="footer-logo">ZUUKE<span>.</span></div>
         <div className="footer-text">© 2026 Zuuke AI · All rights reserved</div>
         <div className="footer-links">
           <Link href="/about">About Us</Link>
-          <Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/affiliate">Affiliate Disclosure</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/affiliate">Affiliate Disclosure</Link>
         </div>
       </footer>
     </>

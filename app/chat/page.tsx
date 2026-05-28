@@ -184,6 +184,15 @@ function ChatApp() {
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-send prompt from URL (e.g. from landing page builder quiz)
+  useEffect(() => {
+    if (!initialized) return
+    const promptText = searchParams.get('prompt')
+    if (!promptText) return
+    window.history.replaceState({}, '', '/chat')
+    setTimeout(() => sendMessage(promptText), 400)
+  }, [initialized]) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function fetchUserStatus(token?: string) {
     try {
       const t = token || (await supabase.auth.getSession()).data.session?.access_token

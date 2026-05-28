@@ -127,7 +127,7 @@ export default function AboutPage() {
 
               <div className="founder-card">
                 <div className="founder-avatar"><span className="initials">YP</span></div>
-                <div className="founder-role">Co-Founder · CEO</div>
+                <div className="founder-role">Co-Founder</div>
                 <div className="founder-name">Yash Patel</div>
                 <div className="founder-school">Florida International University</div>
                 <p className="founder-bio">
@@ -156,7 +156,7 @@ export default function AboutPage() {
 
               <div className="founder-card orange">
                 <div className="founder-avatar"><span className="initials">TN</span></div>
-                <div className="founder-role">Co-Founder · CTO</div>
+                <div className="founder-role">Co-Founder</div>
                 <div className="founder-name">Tai Nguyen</div>
                 <div className="founder-school">Florida International University</div>
                 <p className="founder-bio">
@@ -231,9 +231,9 @@ export default function AboutPage() {
         <div className="footer-text">© 2026 Zuuke AI · All rights reserved</div>
         <div className="footer-links">
           <Link href="/about">About Us</Link>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Affiliate Disclosure</a>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/affiliate">Affiliate Disclosure</Link>
         </div>
       </footer>
     </>

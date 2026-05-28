@@ -251,7 +251,7 @@ export default function LandingPage() {
         <div className="footer-text">© 2026 Zuuke AI · All rights reserved</div>
         <div className="footer-links">
           <Link href="/about">About Us</Link>
-          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Affiliate Disclosure</a>
+          <Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/affiliate">Affiliate Disclosure</Link>
         </div>
       </footer>
     </>

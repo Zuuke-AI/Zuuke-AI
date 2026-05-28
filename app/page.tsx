@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import BgCanvas from '@/components/BgCanvas'
 import { createBrowserClient } from '@/lib/supabase'
 
 export default function LandingPage() {
+  const router = useRouter()
   const [userName, setUserName] = useState<string | null>(null)
+  const [isUpgrading, setIsUpgrading] = useState(false)
   const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -52,6 +55,29 @@ export default function LandingPage() {
     return () => observer.disconnect()
   }, [])
 
+  async function handleUpgrade() {
+    if (isUpgrading) return
+    setIsUpgrading(true)
+    try {
+      const supabase = createBrowserClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth?mode=signup&next=upgrade')
+        return
+      }
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } catch {
+      router.push('/chat')
+    } finally {
+      setIsUpgrading(false)
+    }
+  }
+
   return (
     <>
       <BgCanvas opacity={0.6} particleCount={120} connectDistance={120} />
@@ -71,10 +97,10 @@ export default function LandingPage() {
         color: '#000',
         fontWeight: 700,
       }}>
-        🎉 Limited Offer — 1 Month Free on Pro · Card required · Cancel anytime
-        <Link href="/#pricing" style={{ marginLeft: 14, color: '#000', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-          Claim →
-        </Link>
+        🎉 Limited Time — First Month Free on Pro · Cancel anytime
+        <button onClick={handleUpgrade} style={{ marginLeft: 14, color: '#000', textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', fontWeight: 700 }}>
+          {isUpgrading ? 'Loading...' : 'Claim →'}
+        </button>
       </div>
 
       <nav ref={navRef} className="nav" style={{ top: 37 }}>
@@ -231,7 +257,7 @@ export default function LandingPage() {
           <div className="section-label" style={{ justifyContent: 'center' }}>Pricing</div>
           <h2 className="section-title">FIRST MONTH<br /><span style={{ color: 'var(--orange)' }}>FREE.</span></h2>
           <p style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--mist)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 40, marginTop: -16 }}>
-            Limited time · Card required · Cancel anytime
+            Limited time offer · Cancel anytime
           </p>
           <div className="pricing-grid">
             <div className="price-card">
@@ -258,9 +284,9 @@ export default function LandingPage() {
                 <li>Amazon affiliate links</li><li>Saved build history</li>
                 <li>Price drop alerts</li><li>Priority responses</li>
               </ul>
-              <Link href="/chat" className="price-btn filled" style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.35)' }}>
-                Claim Free Month →
-              </Link>
+              <button onClick={handleUpgrade} disabled={isUpgrading} className="price-btn filled" style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.35)', cursor: 'pointer' }}>
+                {isUpgrading ? 'Loading...' : 'Claim Free Month →'}
+              </button>
             </div>
           </div>
         </div>

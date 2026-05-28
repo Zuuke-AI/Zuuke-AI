@@ -84,8 +84,17 @@ function AuthForm() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword })
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword })
       if (error) throw error
+      // If coming from upgrade flow, go straight to Stripe checkout
+      if (searchParams.get('next') === 'upgrade' && data.session) {
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+        })
+        const json = await res.json()
+        if (json.url) { window.location.href = json.url; return }
+      }
       router.push('/chat')
     } catch (err) {
       setAlert({ msg: (err as Error).message || 'Invalid email or password.', type: 'error' })

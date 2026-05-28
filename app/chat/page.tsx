@@ -928,7 +928,7 @@ function ChatApp() {
             <div className="limit-title">DAILY LIMIT REACHED</div>
             <div className="limit-sub">
               You&apos;ve used all 10 free messages today.<br />
-              <strong style={{ color: 'var(--orange)' }}>Try Pro free for 1 month</strong> — then just $5/mo. Cancel anytime.
+              <strong style={{ color: 'var(--orange)' }}>Try Pro free for 1 month</strong> — then just $5/mo. Cancel anytime at no charge.
             </div>
             <button className="limit-upgrade-btn" onClick={handleUpgrade} disabled={isUpgrading} style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.3)' }}>
               {isUpgrading ? 'Loading...' : '🎉 Claim 1 Month Free'}

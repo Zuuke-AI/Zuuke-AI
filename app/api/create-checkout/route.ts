@@ -53,13 +53,14 @@ export async function POST(request: Request) {
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
+      payment_method_collection: 'always',
       line_items: [
         {
           price_data: {
             currency: 'usd',
             product_data: {
               name: 'Zuuke Pro',
-              description: 'Unlimited AI PC build recommendations',
+              description: 'Unlimited AI PC build recommendations — first month free',
             },
             unit_amount: 500,
             recurring: { interval: 'month' },
@@ -67,6 +68,12 @@ export async function POST(request: Request) {
           quantity: 1,
         },
       ],
+      subscription_data: {
+        trial_period_days: 30,
+        trial_settings: {
+          end_behavior: { missing_payment_method: 'cancel' },
+        },
+      },
       success_url: `${APP_URL}/chat?upgraded=true`,
       cancel_url: `${APP_URL}/chat`,
     })

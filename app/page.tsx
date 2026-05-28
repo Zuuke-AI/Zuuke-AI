@@ -56,7 +56,28 @@ export default function LandingPage() {
     <>
       <BgCanvas opacity={0.6} particleCount={120} connectDistance={120} />
 
-      <nav ref={navRef} className="nav">
+      {/* ── Promo Banner ── */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+        background: 'linear-gradient(90deg, var(--orange) 0%, #ff9a4d 50%, var(--orange) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'promoBg 4s ease infinite',
+        padding: '9px 16px',
+        textAlign: 'center',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        color: '#000',
+        fontWeight: 700,
+      }}>
+        🎉 Limited Offer — 1 Month Free on Pro · Card required · Cancel anytime
+        <Link href="/#pricing" style={{ marginLeft: 14, color: '#000', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+          Claim →
+        </Link>
+      </div>
+
+      <nav ref={navRef} className="nav" style={{ top: 37 }}>
         <Link href="/" className="nav-logo">
           <div className="nav-logo-mark">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -208,7 +229,10 @@ export default function LandingPage() {
       <section className="pricing" id="pricing" style={{ position: 'relative', zIndex: 1 }}>
         <div className="pricing-inner">
           <div className="section-label" style={{ justifyContent: 'center' }}>Pricing</div>
-          <h2 className="section-title">START FREE.<br />GO PRO.</h2>
+          <h2 className="section-title">FIRST MONTH<br /><span style={{ color: 'var(--orange)' }}>FREE.</span></h2>
+          <p style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--mist)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 40, marginTop: -16 }}>
+            Limited time · Card required · Cancel anytime
+          </p>
           <div className="pricing-grid">
             <div className="price-card">
               <div className="price-plan">Free Tier</div>
@@ -222,16 +246,21 @@ export default function LandingPage() {
               <Link href="/chat" className="price-btn outline">Start Building</Link>
             </div>
             <div className="price-card featured">
-              <div className="price-badge">Most Popular</div>
+              <div className="price-badge" style={{ background: 'var(--orange)', color: '#000' }}>🎉 1 Month Free</div>
               <div className="price-plan">Pro Builder</div>
-              <div className="price-amount">$<span>5</span></div>
-              <div className="price-period">per month</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <div className="price-amount" style={{ textDecoration: 'line-through', opacity: 0.4, fontSize: '1.6rem' }}>$<span style={{ fontSize: '2.4rem' }}>5</span></div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 52, color: 'var(--orange)', letterSpacing: '0.02em', lineHeight: 1 }}>FREE</div>
+              </div>
+              <div className="price-period">first month · then $5/mo</div>
               <ul className="price-features">
                 <li>Unlimited messages</li><li>Full build generation</li><li>Compatibility checking</li>
                 <li>Amazon affiliate links</li><li>Saved build history</li>
                 <li>Price drop alerts</li><li>Priority responses</li>
               </ul>
-              <Link href="/chat" className="price-btn filled">Go Pro →</Link>
+              <Link href="/chat" className="price-btn filled" style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.35)' }}>
+                Claim Free Month →
+              </Link>
             </div>
           </div>
         </div>

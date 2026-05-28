@@ -690,7 +690,7 @@ function ChatApp() {
                     </div>
                   </div>
                   <button className="upgrade-btn" onClick={handleUpgrade} disabled={isUpgrading}>
-                    {isUpgrading ? '...' : '↑ Upgrade to Pro'}
+                    {isUpgrading ? '...' : '🎉 1 Month Free — Try Pro'}
                   </button>
                   {upgradeError && (
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--danger)', marginTop: 6, lineHeight: 1.4 }}>
@@ -928,10 +928,10 @@ function ChatApp() {
             <div className="limit-title">DAILY LIMIT REACHED</div>
             <div className="limit-sub">
               You&apos;ve used all 10 free messages today.<br />
-              Upgrade to Pro for unlimited access — just $5/month.
+              <strong style={{ color: 'var(--orange)' }}>Try Pro free for 1 month</strong> — then just $5/mo. Cancel anytime.
             </div>
-            <button className="limit-upgrade-btn" onClick={handleUpgrade} disabled={isUpgrading}>
-              {isUpgrading ? 'Loading...' : 'Upgrade to Pro — $5/month'}
+            <button className="limit-upgrade-btn" onClick={handleUpgrade} disabled={isUpgrading} style={{ background: 'var(--orange)', boxShadow: '0 4px 20px rgba(255,107,43,0.3)' }}>
+              {isUpgrading ? 'Loading...' : '🎉 Claim 1 Month Free'}
             </button>
             {upgradeError && (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--danger)', margin: '8px 0' }}>
@@ -956,7 +956,7 @@ function ChatApp() {
             </div>
             <p className="signin-box-sub">
               {guestCount >= GUEST_LIMIT ? (
-                <>You&apos;ve used your <strong>{GUEST_LIMIT} free guest messages</strong>. Create a free account to get <strong>10 messages per day</strong> — or go Pro for unlimited.</>
+                <>You&apos;ve used your <strong>{GUEST_LIMIT} free guest messages</strong>. Create a free account for <strong>10 messages per day</strong> — or try Pro free for 1 month, then $5/mo.</>
               ) : (
                 <>Sign in to save your build history, get more messages, and unlock Pro features.</>
               )}

@@ -18,10 +18,11 @@
   --mist: #6b7f96;
   --mist-2: #8fa3bc;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --promo-h: 37px;
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   font-family: var(--font-body, 'Rajdhani', sans-serif);
   background: var(--black);
@@ -68,16 +69,18 @@ body:has(button:hover) .cursor-ring { width: 54px; height: 54px; border-color: v
   border-bottom-color: var(--border);
   backdrop-filter: blur(20px);
 }
-.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer !important; -webkit-tap-highlight-color: transparent; user-select: none; }
 .nav-logo-mark {
-  width: 36px; height: 36px;
-  border: 1px solid var(--cyan);
+  width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
-  clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
-  background: var(--cyan-dim); color: var(--cyan);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: filter 0.2s ease;
 }
-.nav-wordmark { font-family: var(--font-display, 'Bebas Neue', sans-serif); font-size: 26px; letter-spacing: 0.08em; color: var(--white); }
+.nav-logo:hover .nav-logo-mark { filter: drop-shadow(0 0 10px rgba(0,212,255,0.8)); }
+.nav-wordmark { font-family: var(--font-body, 'Rajdhani', sans-serif); font-weight: 700; font-size: 22px; letter-spacing: 0.16em; color: var(--white); transition: color 0.2s ease; }
 .nav-wordmark span { color: var(--cyan); }
+.nav-logo:hover .nav-wordmark { color: var(--cyan); }
 .nav-links { display: flex; align-items: center; gap: 36px; }
 .nav-links a {
   font-size: 13px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
@@ -212,6 +215,9 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 .price-amount { font-family: var(--font-display, 'Bebas Neue', sans-serif); font-size: 64px; letter-spacing: 0.02em; line-height: 1; color: var(--white); margin-bottom: 4px; display: flex; align-items: flex-start; gap: 2px; }
 .price-amount span { font-size: 36px; color: var(--mist); margin-top: 8px; line-height: 1; }
 .price-period { font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: 11px; color: var(--mist); letter-spacing: 0.1em; margin-bottom: 36px; }
+.price-free-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: nowrap; }
+.price-amount-strike { text-decoration: line-through; opacity: 0.35; }
+.price-free-text { font-family: var(--font-display, 'Bebas Neue', sans-serif); font-size: 52px; color: var(--orange); letter-spacing: 0.02em; line-height: 1; }
 .price-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px; }
 .price-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: var(--mist-2); }
 .price-features li::before { content: '▸'; color: var(--cyan); font-size: 12px; flex-shrink: 0; }
@@ -299,9 +305,11 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
   .sidebar.mobile-hidden { transform: none; width: 0; min-width: 0; overflow: hidden; border-right: none; }
 }
 .sidebar-header { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; text-decoration: none; }
-.sidebar-logo-mark { width: 30px; height: 30px; background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.3); clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%); display: flex; align-items: center; justify-content: center; color: var(--cyan); flex-shrink: 0; }
-.sidebar-logo-name { font-family: var(--font-display, 'Bebas Neue', sans-serif); font-size: 20px; letter-spacing: 0.08em; color: var(--white); line-height: 1; }
+.sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; text-decoration: none; cursor: pointer !important; -webkit-tap-highlight-color: transparent; user-select: none; }
+.sidebar-logo-mark { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; transition: filter 0.2s ease; }
+.sidebar-logo:hover .sidebar-logo-mark { filter: drop-shadow(0 0 8px rgba(0,212,255,0.8)); }
+.sidebar-logo-name { font-family: var(--font-body, 'Rajdhani', sans-serif); font-weight: 700; font-size: 18px; letter-spacing: 0.14em; color: var(--white); line-height: 1; transition: color 0.2s ease; }
+.sidebar-logo:hover .sidebar-logo-name { color: var(--cyan); }
 .sidebar-logo-name span { color: var(--cyan); }
 .sidebar-logo-sub { font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mist); }
 .new-chat-btn { width: 100%; padding: 10px 14px; background: transparent; border: 1px solid var(--border-2); color: var(--mist-2); cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: var(--font-body, 'Rajdhani', sans-serif); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%); transition: all 0.25s ease; position: relative; overflow: hidden; }
@@ -397,6 +405,18 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 .msg-text pre { background: var(--dark-2); border: 1px solid var(--border); padding: 16px; overflow-x: auto; margin: 0.8em 0; }
 .msg-text pre code { background: none; border: none; padding: 0; color: var(--mist-2); }
 .msg-text a { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(0,212,255,0.35); }
+
+/* ── Product compare widget ─────────────────────────────────────── */
+.product-wrap { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+.product-amz { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(0,212,255,0.35); font-weight: 600; }
+.product-amz:hover { color: #fff; }
+.product-compare-wrap { position: relative; display: inline-flex; }
+.product-compare-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25); color: var(--cyan); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; padding: 1px 6px; cursor: pointer; border-radius: 3px; line-height: 1.6; transition: background 0.15s; }
+.product-compare-btn:hover { background: rgba(0,212,255,0.2); }
+.product-compare-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 100; background: var(--dark-2); border: 1px solid var(--border-2); min-width: 150px; padding: 6px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.product-compare-menu.open { display: flex; flex-direction: column; }
+.product-compare-menu a { display: block; padding: 7px 14px; font-size: 12px; color: var(--mist-2); text-decoration: none; white-space: nowrap; transition: background 0.1s, color 0.1s; }
+.product-compare-menu a:hover { background: rgba(0,212,255,0.08); color: var(--white); }
 .msg-text blockquote { border-left: 2px solid var(--cyan); margin: 0.8em 0; padding: 4px 0 4px 16px; color: var(--mist); font-style: italic; }
 .msg-text table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 13px; }
 .msg-text th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--cyan); font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); font-weight: 400; }
@@ -539,8 +559,10 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 .signin-close:hover { color: var(--white); }
 
 /* ── Promo Banner ── */
-.promo-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: linear-gradient(90deg, var(--orange) 0%, #ff9a4d 50%, var(--orange) 100%); background-size: 200% 100%; animation: promoBg 4s ease infinite; padding: 9px 16px; text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #000; font-weight: 700; }
-.promo-link-btn { margin-left: 14px; color: #000; text-decoration: underline; text-underline-offset: 3px; background: none; border: none; cursor: none; font-family: inherit; font-size: inherit; letter-spacing: inherit; font-weight: 700; }
+.promo-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: linear-gradient(90deg, var(--orange) 0%, #ff9a4d 50%, var(--orange) 100%); background-size: 200% 100%; animation: promoBg 4s ease infinite; padding: 9px 16px; text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #000; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0; white-space: nowrap; overflow: hidden; height: var(--promo-h); }
+.promo-link-btn { margin-left: 14px; color: #000; text-decoration: underline; text-underline-offset: 3px; background: none; border: none; cursor: none; font-family: inherit; font-size: inherit; letter-spacing: inherit; font-weight: 700; flex-shrink: 0; }
+.banner-text-full { display: inline; }
+.banner-text-short { display: none; }
 
 /* ── Trust Row ── */
 .trust-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 36px; }
@@ -660,24 +682,46 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
   .how-it-works, .demo-section { padding: 80px 24px; }
   .features, .pricing { padding: 80px 24px; }
   .final-cta { padding: 100px 24px; }
-  .builds-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; }
+  .builds-grid { grid-template-columns: 1fr; max-width: 500px; margin-inline: auto; }
   .usecase-grid { grid-template-columns: repeat(2, 1fr); }
   .why-table-head, .why-table-row { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+  /* Pricing free row on tablet */
+  .price-free-text { font-size: 44px; }
 }
 
 /* ── 768px: mobile ── */
 @media (max-width: 768px) {
+  /* Promo banner */
+  :root { --promo-h: 36px; }
+  .banner-text-full { display: none; }
+  .banner-text-short { display: inline; }
+  .promo-banner { font-size: 10px; padding: 8px 14px; letter-spacing: 0.08em; gap: 0; }
+  .promo-link-btn { margin-left: 10px; }
+
   /* Nav */
   .nav { padding: 14px 20px; }
   .nav-login { display: none; }
   .nav-cta { padding: 8px 18px; font-size: 11px; }
 
+  /* Pricing free offer */
+  .price-free-text { font-size: 40px; }
+  .price-free-row { gap: 6px; }
+  .price-amount { font-size: 40px; }
+  .price-card { padding: 32px 24px; }
+  .price-badge { font-size: 8px; margin-bottom: 20px; }
+  .price-period { font-size: 10px; }
+  .price-features { font-size: 13px; gap: 10px; margin-bottom: 28px; }
+
   /* Builder / builds / why */
   .builder-section, .builds-section, .why-section { padding: 60px 20px; }
   .usecase-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .budget-pills { gap: 8px; }
+  .budget-pill { padding: 10px 14px; }
+  .bp-main { font-size: 11px; }
   .goal-pills { gap: 8px; flex-wrap: wrap; }
-  .builder-cta-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .goal-pill { padding: 10px 16px; font-size: 10px; }
+  .builder-cta-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .builder-cta-btn { width: 100%; justify-content: center; padding: 14px 24px; }
   .trust-row { gap: 8px; }
   .trust-chip { font-size: 9px; padding: 6px 12px; }
   .builds-grid { grid-template-columns: 1fr; }
@@ -781,11 +825,28 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 
 /* ── 480px: small phones ── */
 @media (max-width: 480px) {
+  :root { --promo-h: 34px; }
   .hero { padding: 80px 16px 48px; }
   .hero-eyebrow { font-size: 8px; padding: 5px 12px; }
   .how-it-works, .demo-section, .features, .pricing { padding: 48px 16px; }
   .terminal-body { font-size: 10px; }
-  .price-card { padding: 28px 20px; }
+  /* Pricing free offer — small phones */
+  .price-card { padding: 28px 18px; }
+  .price-free-text { font-size: clamp(32px, 9vw, 40px); }
+  .price-amount { font-size: clamp(34px, 9vw, 40px); }
+  .price-free-row { gap: 4px; align-items: baseline; }
+  .price-period { margin-bottom: 24px; }
+  .price-features { margin-bottom: 24px; }
+  /* Builder / builds — small phones */
+  .builder-section, .builds-section, .why-section { padding: 48px 16px; }
+  .usecase-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .usecase-card { padding: 14px 12px; }
+  .uc-label { font-size: 13px; }
+  .build-card-v2 { padding: 18px 16px; }
+  .build-card-name { font-size: 19px; }
+  .build-card-price { font-size: 22px; }
+  .builder-cta-btn { font-size: 11px; letter-spacing: 0.1em; }
+  /* General */
   .feature-card { padding: 24px 18px; }
   .founder-card { padding: 28px 20px; }
   .auth-right { padding: 32px 18px; }
@@ -794,4 +855,6 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
   .message { padding: 14px 12px; }
   .input-container { padding: 10px 12px 14px; }
   .demo-messages { padding: 16px 12px; }
+  /* Trust row */
+  .trust-chip { font-size: 8px; padding: 5px 10px; gap: 5px; }
 }

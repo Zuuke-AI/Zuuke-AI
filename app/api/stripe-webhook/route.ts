@@ -11,14 +11,15 @@ export async function POST(request: Request) {
 
   let event: Stripe.Event
 
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET is not set')
+    return Response.json({ error: 'Webhook secret not configured' }, { status: 500 })
+  }
+
   try {
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-    } else {
-      event = JSON.parse(body)
-    }
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
   } catch (err) {
-    console.error('Webhook error:', (err as Error).message)
+    console.error('Webhook signature verification failed:', (err as Error).message)
     return Response.json({ error: (err as Error).message }, { status: 400 })
   }
 

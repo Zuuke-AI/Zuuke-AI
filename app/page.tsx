@@ -215,20 +215,18 @@ export default function LandingPage() {
 
       {/* ── Promo Banner ── */}
       <div className="promo-banner">
-        🎉 Limited Time — First Month Free on Pro · Cancel anytime
+        <span className="banner-text-full">🎉 Limited Time — First Month Free on Pro · Cancel anytime</span>
+        <span className="banner-text-short">🎉 First Month Free on Pro</span>
         <button onClick={handleUpgrade} className="promo-link-btn">
           {isUpgrading ? 'Loading...' : 'Claim →'}
         </button>
       </div>
 
       {/* ── Nav ── */}
-      <nav ref={navRef} className="nav" style={{ top: 37 }}>
-        <Link href="/" className="nav-logo">
+      <nav ref={navRef} className="nav" style={{ top: 'var(--promo-h, 37px)' }}>
+        <Link href="/" className="nav-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
           <div className="nav-logo-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <rect x="2" y="3" width="20" height="14" rx="1" /><path d="M8 21h8M12 17v4" />
-              <path d="M7 8h2M11 8h6M7 11h4M13 11h4" />
-            </svg>
+            <img src="/zuukelogo-sq.png" style={{width:38,height:38,objectFit:"cover"}} alt="Zuuke logo"/>
           </div>
           <span className="nav-wordmark">ZUUKE<span>.</span></span>
         </Link>
@@ -257,9 +255,9 @@ export default function LandingPage() {
       <section className="hero" style={{ paddingTop: 'clamp(120px, 15vw, 180px)' }}>
         <div className="hero-eyebrow">AI-Powered · Personalized · Instant</div>
         <h1 className="hero-title">
-          <span className="line-1">YOUR PERFECT</span>
-          <span className="line-2">PC BUILD</span>
-          <span className="line-3">IN SECONDS.</span>
+          <span className="line-1">BUILD YOUR</span>
+          <span className="line-2">PERFECT RIG</span>
+          <span className="line-3">IN SECONDS</span>
         </h1>
         <p className="hero-sub">
           Tell Zuuke your budget, games, and goals. Get a fully personalized, compatibility-verified PC build recommendation in under 30 seconds — not 30 hours of Reddit research.
@@ -560,9 +558,9 @@ export default function LandingPage() {
             <div className="price-card featured">
               <div className="price-badge" style={{ background: 'var(--orange)', color: '#000' }}>🎉 1 Month Free</div>
               <div className="price-plan">Pro Builder</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <div className="price-amount" style={{ textDecoration: 'line-through', opacity: 0.35 }}>$<span>5</span></div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 52, color: 'var(--orange)', letterSpacing: '0.02em', lineHeight: 1 }}>FREE</div>
+              <div className="price-free-row">
+                <div className="price-amount price-amount-strike">$<span>5</span></div>
+                <div className="price-free-text">FREE</div>
               </div>
               <div className="price-period">first month · then $5/mo</div>
               <ul className="price-features">

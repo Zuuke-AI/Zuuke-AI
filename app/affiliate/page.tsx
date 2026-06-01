@@ -18,11 +18,9 @@ export default function AffiliatePage() {
       <BgCanvas opacity={0.3} particleCount={60} connectDistance={100} />
 
       <nav ref={navRef} className="nav">
-        <Link href="/" className="nav-logo">
+        <Link href="/" className="nav-logo" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>
           <div className="nav-logo-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <rect x="2" y="3" width="20" height="14" rx="1" /><path d="M8 21h8M12 17v4" />
-            </svg>
+            <img src="/zuukelogo-sq.png" style={{width:38,height:38,objectFit:"cover"}} alt="Zuuke logo"/>
           </div>
           <span className="nav-wordmark">ZUUKE<span>.</span></span>
         </Link>
@@ -79,7 +77,7 @@ export default function AffiliatePage() {
 
             <LegalSection title="02 — Amazon Associates Program">
               <p>Zuuke is a participant in the <strong>Amazon Services LLC Associates Program</strong>, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.com.</p>
-              <p>Our Amazon affiliate tag is <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--dark-3)', padding: '2px 8px', color: 'var(--cyan)' }}>zuuke-20</code>. You can identify our affiliate links by this tag in the URL.</p>
+              <p>Our Amazon affiliate tag is <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--dark-3)', padding: '2px 8px', color: 'var(--cyan)' }}>zuuke06-20</code>. You can identify our affiliate links by this tag in the URL.</p>
               <p>Amazon and the Amazon logo are trademarks of Amazon.com, Inc., or its affiliates.</p>
             </LegalSection>
 

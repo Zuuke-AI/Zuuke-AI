@@ -8,7 +8,7 @@ import BgCanvas from '@/components/BgCanvas'
 import { createBrowserClient } from '@/lib/supabase'
 import { marked } from 'marked'
 
-const TAG = 'zuuke-20'
+const TAG = 'zuuke06-20'
 const GUEST_LIMIT = 5
 
 interface Message {
@@ -35,22 +35,91 @@ interface UserStatus {
 
 // ── Helpers ──────────────────────────────────────────────────────
 
+function makeLink(name: string): string {
+  const q = encodeURIComponent(name.trim())
+  const amazon  = `https://www.amazon.com/s?k=${q}&tag=${TAG}`
+  const newegg  = `https://www.newegg.com/p/pl?d=${q}`
+  const bestbuy = `https://www.bestbuy.com/site/searchpage.jsp?st=${q}`
+  const bh      = `https://www.bhphotovideo.com/c/search?q=${q}`
+  return (
+    `<span class="product-wrap">` +
+      `<a class="product-amz" href="${amazon}" target="_blank" rel="noopener sponsored">${name}</a>` +
+      `<span class="product-compare-wrap">` +
+        `<button class="product-compare-btn" onclick="this.nextElementSibling.classList.toggle('open')">compare ▾</button>` +
+        `<span class="product-compare-menu">` +
+          `<a href="${amazon}"  target="_blank" rel="noopener sponsored">🛒 Amazon</a>` +
+          `<a href="${newegg}"  target="_blank" rel="noopener noreferrer">🔵 Newegg</a>` +
+          `<a href="${bestbuy}" target="_blank" rel="noopener noreferrer">🟡 Best Buy</a>` +
+          `<a href="${bh}"      target="_blank" rel="noopener noreferrer">⚫ B&H Photo</a>` +
+        `</span>` +
+      `</span>` +
+    `</span>`
+  )
+}
+
 function addLinks(html: string): string {
-  const pats = [
-    /\b(RTX\s*\d{4}(?:\s*(?:Super|Ti|XT|XTX))?)\b/gi,
-    /\b(RX\s*\d{4}(?:\s*(?:XT|XTX|GRE))?)\b/gi,
-    /\b(Ryzen\s*[359]\s*\d{4}[A-Z0-9]*)\b/gi,
-    /\b(Core\s*i[357]-\d{4,5}[A-Z0-9]*)\b/gi,
-    /\b(Corsair\s+RM\d+[ex]?)\b/gi,
-  ]
-  let r = html
-  pats.forEach((re) => {
-    r = r.replace(
-      re,
-      (m) =>
-        `<a href="https://www.amazon.com/s?k=${encodeURIComponent(m.trim())}&tag=${TAG}" target="_blank" rel="noopener sponsored">${m}</a>`
-    )
-  })
+  // 1. [[Product Name]] markers from the AI — highest priority, most reliable
+  let r = html.replace(/\[\[([^\]]+)\]\]/g, (_match, name) => makeLink(name))
+
+  // Already inside an <a> tag — skip re-linking
+  const linked = new Set<string>()
+  r.replace(/<a [^>]*>([^<]+)<\/a>/gi, (_m, text) => { linked.add(text.toLowerCase()); return _m })
+
+  const wrap = (re: RegExp) => {
+    r = r.replace(re, (m) => {
+      if (linked.has(m.toLowerCase())) return m
+      // Don't double-wrap inside existing <a> tags
+      return makeLink(m)
+    })
+  }
+
+  // 2. GPUs
+  wrap(/\b(RTX\s*(?:5090|5080|5070\s*Ti|5070|5060\s*Ti|5060|4090|4080\s*Super|4080|4070\s*Ti\s*Super|4070\s*Ti|4070\s*Super|4070|4060\s*Ti|4060|3090\s*Ti|3090|3080\s*Ti|3080|3070\s*Ti|3070|3060\s*Ti|3060))\b/gi)
+  wrap(/\b(RX\s*(?:9070\s*XT|9070|7900\s*XTX|7900\s*XT|7900\s*GRE|7800\s*XT|7700\s*XT|7700|7600\s*XT|7600|6950\s*XT|6900\s*XT|6800\s*XT|6800|6750\s*XT|6700\s*XT|6650\s*XT|6600\s*XT|6600))\b/gi)
+  wrap(/\b(Arc\s*(?:B580|B570|A770|A750|A580|A380))\b/gi)
+
+  // 3. CPUs
+  wrap(/\b(Ryzen\s*(?:9|7|5|3)\s*\d{4}[A-Z0-9]*(?:\s*(?:3D\s*V-Cache|X3D|X|G|GE|XT))?)\b/gi)
+  wrap(/\b(Core\s*(?:Ultra\s*(?:9|7|5)\s*\d{3,4}[A-Z0-9]*|i9-\d{4,5}[A-Z0-9]*|i7-\d{4,5}[A-Z0-9]*|i5-\d{4,5}[A-Z0-9]*|i3-\d{4,5}[A-Z0-9]*))\b/gi)
+
+  // 4. Motherboards — brand + chipset/series
+  wrap(/\b((?:ASUS|MSI|Gigabyte|ASRock)\s+(?:ROG\s+(?:Strix|Maximus|Crosshair|Zenith)[^<,\n]*?|TUF\s+Gaming[^<,\n]*?|Prime[^<,\n]*?|ProArt[^<,\n]*?|MAG[^<,\n]*?|MEG\s+\w+|MPG\s+\w+|Pro\s+\w+|Aorus[^<,\n]*?|Gaming\s+X[^<,\n]*?|UD[^<,\n]*?|Taichi[^<,\n]*?|Steel\s+Legend[^<,\n]*?|Phantom\s+Gaming[^<,\n]*?)\s+(?:X870E?|X670E?|B650E?|Z890|Z790|Z690|B760|B660|H770|H670)[^<,\n]*)\b/gi)
+
+  // 5. RAM
+  wrap(/\b((?:G\.Skill|Corsair|Kingston|TeamGroup|Crucial|Patriot)\s+(?:Trident\s*Z5?[^<,\n]*?|Ripjaws[^<,\n]*?|Vengeance[^<,\n]*?|Dominator[^<,\n]*?|Fury\s*(?:Beast|Renegade|Impact)[^<,\n]*?|Delta[^<,\n]*?|T-Force[^<,\n]*?)\s+\d+GB(?:\s*(?:DDR5|DDR4))?[^<,\n]*)\b/gi)
+
+  // 6. Storage (NVMe / SSD / HDD)
+  wrap(/\b(Samsung\s+(?:990\s*Pro|980\s*Pro|970\s*EVO\s*Plus|870\s*EVO|870\s*QVO|860\s*EVO)[^<,\n]*)\b/gi)
+  wrap(/\b(WD\s+(?:Black\s+SN\d+[A-Z]*|Blue\s+SN\d+[A-Z]*|Red\s+Pro?|Gold)[^<,\n]*)\b/gi)
+  wrap(/\b(Seagate\s+(?:Barracuda|IronWolf|FireCuda|Exos)[^<,\n]*)\b/gi)
+  wrap(/\b(Crucial\s+(?:P5\s*Plus|P3\s*Plus|P3|MX500|BX500)[^<,\n]*)\b/gi)
+  wrap(/\b(SK\s*Hynix\s+Platinum\s+P41[^<,\n]*)\b/gi)
+
+  // 7. PSUs
+  wrap(/\b(Corsair\s+(?:RM\d+[exi]*|HX\d+[i]*|AX\d+[i]*|SF\d+[L]*)[^<,\n]*)\b/gi)
+  wrap(/\b(Seasonic\s+(?:Focus\s*(?:GX|PX|SPX)|Prime\s*(?:TX|PX|GX)|VERTEX)[^<,\n]*)\b/gi)
+  wrap(/\b(be\s*quiet!\s+(?:Straight\s+Power|Dark\s+Power\s*Pro|Pure\s+Power)[^<,\n]*)\b/gi)
+  wrap(/\b(NZXT\s+C\d+[^<,\n]*(?:Gold|White|Black)?)\b/gi)
+  wrap(/\b(Thermaltake\s+Toughpower\s+(?:GF|PF|iRGB)[^<,\n]*)\b/gi)
+  wrap(/\b(Super\s*Flower\s+Leadex[^<,\n]*)\b/gi)
+
+  // 8. Cases
+  wrap(/\b(Fractal\s+Design\s+(?:Torrent|Define\s*[R-Z]?\d*|North|Meshify[^<,\n]*?|Pop\s*(?:Air|Mini|XL)?)[^<,\n]*)\b/gi)
+  wrap(/\b(Lian\s+Li\s+(?:O11\s*(?:Dynamic|Air|EVO|Mini)[^<,\n]*?|Lancool[^<,\n]*?|PC-O\d+[^<,\n]*?))\b/gi)
+  wrap(/\b(NZXT\s+(?:H\d+\s*(?:Flow|Elite|i)?|Kraken\s*(?:X|Z|Elite)?[^<,\n]*?))\b/gi)
+  wrap(/\b(Phanteks\s+(?:Eclipse|Enthoo|NV[^<,\n]*?))\b/gi)
+  wrap(/\b(Corsair\s+(?:4000D|5000D|7000D)[^<,\n]*)\b/gi)
+  wrap(/\b(Cooler\s+Master\s+(?:HAF|MasterBox|MasterCase|NR\d+)[^<,\n]*)\b/gi)
+  wrap(/\b(Deepcool\s+(?:CC\d+|CH\d+|Matrexx)[^<,\n]*)\b/gi)
+
+  // 9. CPU Coolers
+  wrap(/\b(Noctua\s+(?:NH-D15|NH-D15S|NH-U12S|NH-U14S|NF-[^<,\n]*?))\b/gi)
+  wrap(/\b(Arctic\s+(?:Liquid\s+Freezer\s*(?:II|III)?[^<,\n]*?|Freezer\s*34[^<,\n]*?))\b/gi)
+  wrap(/\b(Cooler\s+Master\s+(?:Hyper\s*212[^<,\n]*?|MasterLiquid[^<,\n]*?))\b/gi)
+  wrap(/\b(be\s*quiet!\s+(?:Dark\s+Rock\s*(?:Pro\s*4|TF\s*2|4)|Shadow\s+Rock[^<,\n]*?))\b/gi)
+  wrap(/\b(DeepCool\s+(?:AK\d+[A-Z]*|ASSASSIN\s*(?:IV|III|IV)[^<,\n]*?|LT\d+[^<,\n]*?))\b/gi)
+  wrap(/\b(Thermalright\s+(?:Peerless\s+Assassin[^<,\n]*?|Phantom\s+Spirit[^<,\n]*?))\b/gi)
+
   return r
 }
 
@@ -122,10 +191,13 @@ function ChatApp() {
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
 
+  const [userId, setUserId] = useState<string | null>(null)
+
   const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const currentChat = chats.find((c) => c.id === currentChatId)
 
@@ -162,25 +234,61 @@ function ChatApp() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Init: load auth session + chats
+  // Debounced cloud sync — fires 1.5 s after any chats state change (logged-in only)
+  useEffect(() => {
+    if (!userId || !initialized) return
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
+    syncTimeoutRef.current = setTimeout(() => {
+      upsertChatsToCloud(chats, userId)
+    }, 1500)
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
+    }
+  }, [chats, userId, initialized]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Init: load auth session + chats (cloud for logged-in, localStorage for guests)
   useEffect(() => {
     setGuestCount(getGuestCount())
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const initialChats = loadChats() || [
-        { id: '1', title: 'New Build Session', timestamp: new Date(), messages: [] },
-      ]
-      setChats(initialChats)
-      setCurrentChatId(initialChats[0]?.id || '1')
-      setInitialized(true)
-
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setIsGuest(false)
+        setUserId(session.user.id)
         fetchUserStatus(session.access_token)
+
+        // Load chats from Supabase cloud
+        const cloudChats = await loadChatsFromCloud(session.user.id)
+
+        if (cloudChats && cloudChats.length > 0) {
+          // Logged in + cloud data exists — use cloud
+          setChats(cloudChats)
+          setCurrentChatId(cloudChats[0].id)
+        } else {
+          // No cloud chats yet — fall back to localStorage and migrate
+          const localChats = loadChats()
+          const initialChats = localChats?.length
+            ? localChats
+            : [{ id: '1', title: 'New Build Session', timestamp: new Date(), messages: [] }]
+          setChats(initialChats)
+          setCurrentChatId(initialChats[0].id)
+          // Migrate local chats to cloud on first login
+          if (localChats?.length) {
+            upsertChatsToCloud(localChats, session.user.id)
+          }
+        }
+
         if (searchParams.get('upgraded') === 'true') {
           window.history.replaceState({}, '', '/chat')
           setTimeout(() => fetchUserStatus(session.access_token), 1500)
         }
+      } else {
+        // Guest: use localStorage only
+        const initialChats = loadChats() || [
+          { id: '1', title: 'New Build Session', timestamp: new Date(), messages: [] },
+        ]
+        setChats(initialChats)
+        setCurrentChatId(initialChats[0]?.id || '1')
       }
+      setInitialized(true)
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -205,6 +313,49 @@ function ChatApp() {
   async function getToken(): Promise<string | null> {
     const { data: { session } } = await supabase.auth.getSession()
     return session?.access_token || null
+  }
+
+  // ── Cloud chat sync ───────────────────────────────────────────
+
+  async function loadChatsFromCloud(uid: string): Promise<Chat[] | null> {
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .select('id, title, messages, updated_at')
+        .eq('user_id', uid)
+        .order('updated_at', { ascending: false })
+      if (error || !data) return null
+      return (data as { id: string; title: string; messages: Message[]; updated_at: string }[]).map((row) => ({
+        id: row.id,
+        title: row.title,
+        timestamp: new Date(row.updated_at),
+        messages: (row.messages || []).map((m: Message) => ({ ...m, timestamp: new Date(m.timestamp) })),
+      }))
+    } catch {
+      return null
+    }
+  }
+
+  async function upsertChatsToCloud(chatsToSync: Chat[], uid: string) {
+    try {
+      const rows = chatsToSync.map((c) => ({
+        id: c.id,
+        user_id: uid,
+        title: c.title,
+        messages: c.messages.map((m) => ({
+          ...m,
+          timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+        })),
+        updated_at: new Date().toISOString(),
+      }))
+      await supabase.from('chats').upsert(rows)
+    } catch { /* noop */ }
+  }
+
+  async function deleteChatFromCloud(chatId: string) {
+    try {
+      await supabase.from('chats').delete().eq('id', chatId)
+    } catch { /* noop */ }
   }
 
   function updateChats(updated: Chat[]) {
@@ -237,6 +388,8 @@ function ChatApp() {
     const updated = chats.filter((c) => c.id !== id)
     updateChats(updated)
     if (currentChatId === id) setCurrentChatId(updated[0].id)
+    // Delete from cloud if logged in
+    if (userId) deleteChatFromCloud(id)
   }
 
   function stopStream() {
@@ -451,6 +604,26 @@ function ChatApp() {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
+          // Handle terminal events BEFORE the generic event: skip
+          if (line === 'event: done' || line === 'event: error') {
+            setChats((prev) => {
+              const updated = prev.map((c) => {
+                if (c.id !== currentChatId) return c
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === asstId ? { ...m, streaming: false } : m
+                  ),
+                }
+              })
+              saveChats(updated)
+              return updated
+            })
+            setIsStreaming(false)
+            streamReaderRef.current = null
+            if (!isGuest) fetchUserStatus()
+            continue
+          }
           if (line.startsWith('event: ')) continue
           if (line.startsWith('data: ')) {
             try {
@@ -470,26 +643,23 @@ function ChatApp() {
                   return updated
                 })
                 scrollBottom()
+              } else if (data.message !== undefined) {
+                // Server-sent error message during stream
+                rawText = rawText || data.message
+                setChats((prev) => {
+                  const updated = prev.map((c) => {
+                    if (c.id !== currentChatId) return c
+                    return {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === asstId ? { ...m, content: rawText } : m
+                      ),
+                    }
+                  })
+                  return updated
+                })
               }
             } catch { /* partial line */ }
-          }
-          if (line === 'event: done' || line === 'event: error') {
-            setChats((prev) => {
-              const updated = prev.map((c) => {
-                if (c.id !== currentChatId) return c
-                return {
-                  ...c,
-                  messages: c.messages.map((m) =>
-                    m.id === asstId ? { ...m, streaming: false } : m
-                  ),
-                }
-              })
-              saveChats(updated)
-              return updated
-            })
-            setIsStreaming(false)
-            streamReaderRef.current = null
-            if (!isGuest) fetchUserStatus()
           }
         }
       }
@@ -586,12 +756,9 @@ function ChatApp() {
       {/* ── SIDEBAR ── */}
       <aside className={`sidebar${sidebarOpen ? '' : ' mobile-hidden'}`} id="sidebar">
         <div className="sidebar-header">
-          <Link href="/" className="sidebar-logo">
+          <Link href="/" className="sidebar-logo" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>
             <div className="sidebar-logo-mark">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <rect x="2" y="3" width="20" height="14" rx="1" />
-                <path d="M8 21h8M12 17v4" />
-              </svg>
+              <img src="/zuukelogo-sq.png" style={{width:30,height:30,objectFit:"cover"}} alt="Zuuke logo"/>
             </div>
             <div>
               <div className="sidebar-logo-name">ZUUKE<span>.</span></div>

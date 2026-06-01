@@ -7,6 +7,8 @@ import { Suspense } from 'react'
 import BgCanvas from '@/components/BgCanvas'
 import { createBrowserClient } from '@/lib/supabase'
 import { marked } from 'marked'
+import { isBuildResponse } from '@/lib/build-utils'
+import { trackEvent } from '@/lib/analytics'
 
 const TAG = 'zuuke06-20'
 const GUEST_LIMIT = 5
@@ -17,6 +19,7 @@ interface Message {
   content: string
   timestamp: Date
   streaming?: boolean
+  buildId?: string  // set when the response is auto-saved as a public build
 }
 
 interface Chat {
@@ -358,6 +361,45 @@ function ChatApp() {
     } catch { /* noop */ }
   }
 
+  // ── Auto-save completed builds ────────────────────────────────
+
+  async function maybeAutoSaveBuild(
+    rawText: string,
+    msgId: string,
+    userPrompt: string,
+    chatId: string
+  ) {
+    if (!isBuildResponse(rawText)) return
+    try {
+      const token = await getToken()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch('/api/builds', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ rawMarkdown: rawText, userPrompt }),
+      })
+      if (!res.ok) return
+      const { id } = await res.json()
+      if (!id) return
+      // Attach the buildId to the assistant message
+      setChats((prev) => {
+        const updated = prev.map((c) => {
+          if (c.id !== chatId) return c
+          return {
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === msgId ? { ...m, buildId: id } : m
+            ),
+          }
+        })
+        saveChats(updated)
+        return updated
+      })
+      trackEvent('build_generated', { buildId: id, userId: userId ?? undefined })
+    } catch { /* noop — build save is best-effort */ }
+  }
+
   function updateChats(updated: Chat[]) {
     setChats(updated)
     saveChats(updated)
@@ -525,6 +567,7 @@ function ChatApp() {
 
   async function sendMessageWithText(msg: string, history: Message[]) {
     const token = await getToken()
+    const chatId = currentChatId  // capture at call time to avoid stale closure
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -667,7 +710,7 @@ function ChatApp() {
       // Final cleanup
       setChats((prev) => {
         const updated = prev.map((c) => {
-          if (c.id !== currentChatId) return c
+          if (c.id !== chatId) return c
           return {
             ...c,
             messages: c.messages.map((m) => (m.id === asstId ? { ...m, streaming: false } : m)),
@@ -676,6 +719,8 @@ function ChatApp() {
         saveChats(updated)
         return updated
       })
+      // Auto-save as a shareable public build (fire-and-forget)
+      maybeAutoSaveBuild(rawText, asstId, msg, chatId)
       if (!isGuest) fetchUserStatus()
     } catch {
       setChats((prev) => {
@@ -743,7 +788,7 @@ function ChatApp() {
   // ── Render ────────────────────────────────────────────────────
 
   return (
-    <div className="container" style={{ display: 'flex', height: '100vh', position: 'relative', zIndex: 1 }}>
+    <div className="container" style={{ display: 'flex', height: '100dvh', position: 'relative', zIndex: 1 }}>
 
       {/* Mobile sidebar overlay — only on narrow viewports */}
       {sidebarOpen && isMobile && (
@@ -901,24 +946,13 @@ function ChatApp() {
             {isGuest ? (
               <button
                 onClick={() => setShowSignInModal(true)}
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 10,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: 'var(--cyan)',
-                  background: 'transparent',
-                  border: '1px solid rgba(0,212,255,0.35)',
-                  padding: '4px 10px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
+                className="topbar-signin-btn"
               >
                 Sign In
               </button>
             ) : userStatus?.name ? (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--mist)' }}>
-                Hi, <span style={{ color: 'var(--cyan)' }}>{userStatus.name}</span>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--mist)', whiteSpace: 'nowrap' }}>
+                <span style={{ color: 'var(--cyan)' }}>{userStatus.name}</span>
               </div>
             ) : null}
           </div>
@@ -1054,7 +1088,7 @@ function ChatApp() {
             <textarea
               ref={inputRef}
               className="input-field"
-              placeholder="Describe your budget, use case, and any parts you already own…"
+              placeholder="Budget, use case, parts you own…"
               rows={1}
               onKeyDown={handleKeyDown}
               onInput={(e) => adjustHeight(e.currentTarget)}
@@ -1182,6 +1216,35 @@ function MessageRow({
   onThumbUp,
   onThumbDown,
 }: MessageRowProps) {
+  const [shareLinkCopied, setShareLinkCopied] = useState(false)
+
+  async function handleShareBuild() {
+    if (!m.buildId) return
+    const url = `https://zuuke.shop/build/${m.buildId}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'My PC Build · Zuuke', url })
+        trackEvent('build_shared', { buildId: m.buildId, source: 'chat_native' })
+      } else {
+        await navigator.clipboard.writeText(url)
+        setShareLinkCopied(true)
+        setTimeout(() => setShareLinkCopied(false), 2500)
+        trackEvent('copy_link_clicked', { buildId: m.buildId, source: 'chat' })
+      }
+    } catch { /* noop */ }
+  }
+
+  async function handleCopyBuildLink() {
+    if (!m.buildId) return
+    const url = `https://zuuke.shop/build/${m.buildId}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareLinkCopied(true)
+      setTimeout(() => setShareLinkCopied(false), 2500)
+      trackEvent('copy_link_clicked', { buildId: m.buildId, source: 'chat' })
+    } catch { /* noop */ }
+  }
+
   const renderedHTML =
     m.role === 'assistant'
       ? addLinks(marked.parse(m.content) as string) +
@@ -1199,6 +1262,34 @@ function MessageRow({
             <span className="msg-time">{fmt(m.timestamp)}</span>
           </div>
           <div className="msg-text" dangerouslySetInnerHTML={{ __html: renderedHTML }} />
+
+          {/* Share panel — appears when AI response is auto-saved as a public build */}
+          {!m.streaming && m.role === 'assistant' && m.buildId && (
+            <div className="chat-build-share">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--cyan)', flexShrink: 0 }}>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              <span className="chat-build-share-url">zuuke.shop/build/{m.buildId}</span>
+              <button
+                className={`chat-build-share-btn${shareLinkCopied ? ' copied' : ''}`}
+                onClick={handleCopyBuildLink}
+                title="Copy shareable link"
+              >
+                {shareLinkCopied ? '✓ Copied' : 'Copy Link'}
+              </button>
+              <a
+                href={`/build/${m.buildId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="chat-build-share-btn"
+                style={{ textDecoration: 'none' }}
+                onClick={() => trackEvent('build_viewed', { buildId: m.buildId, source: 'chat' })}
+              >
+                View →
+              </a>
+            </div>
+          )}
 
           {/* Action buttons — hidden until hover (always visible on touch) */}
           {!m.streaming && (

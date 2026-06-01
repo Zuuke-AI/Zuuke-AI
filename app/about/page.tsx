@@ -1,17 +1,11 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import BgCanvas from '@/components/BgCanvas'
+import SiteNav from '@/components/SiteNav'
 
 export default function AboutPage() {
-  const navRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const onScroll = () => navRef.current?.classList.toggle('scrolled', window.scrollY > 40)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -42,26 +36,7 @@ export default function AboutPage() {
     <>
       <BgCanvas opacity={0.4} particleCount={80} connectDistance={100} />
 
-      <nav ref={navRef} className="nav">
-        <Link href="/" className="nav-logo" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>
-          <div className="nav-logo-mark">
-            <img src="/zuukelogo-sq.png" style={{width:38,height:38,objectFit:"cover"}} alt="Zuuke logo"/>
-          </div>
-          <span className="nav-wordmark">ZUUKE<span>.</span></span>
-        </Link>
-        <div className="nav-links">
-          <Link href="/#how-it-works">How It Works</Link>
-          <Link href="/#features">Features</Link>
-          <Link href="/#pricing">Pricing</Link>
-          <Link href="/about" className="active">About Us</Link>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/auth?mode=login" className="nav-login">
-            Log In
-          </Link>
-          <Link href="/chat" className="nav-cta"><span>Start Building →</span></Link>
-        </div>
-      </nav>
+      <SiteNav activePage="about" />
 
       <div className="page" style={{ position: 'relative', zIndex: 1, paddingTop: 100 }}>
 

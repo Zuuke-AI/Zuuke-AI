@@ -201,7 +201,7 @@ function AuthForm() {
                 <span className="btn-text">Create Free Account →</span>
                 <div className="btn-spinner" />
               </button>
-              <div className="terms-note">By signing up you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</div>
+              <div className="terms-note">By signing up you agree to our <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>.</div>
             </div>
           )}
 

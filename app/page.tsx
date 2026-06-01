@@ -114,6 +114,7 @@ export default function LandingPage() {
   const [budget, setBudget] = useState<string | null>(null)
   const [useCase, setUseCase] = useState<string | null>(null)
   const [goal, setGoal] = useState<string | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -249,7 +250,26 @@ export default function LandingPage() {
             <Link href="/chat" className="nav-cta"><span>Build Free →</span></Link>
           </div>
         )}
+        {/* Hamburger — mobile only */}
+        <button className="nav-hamburger" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
+          <svg width="20" height="14" viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="0" y1="1" x2="20" y2="1"/><line x1="0" y1="7" x2="20" y2="7"/><line x1="0" y1="13" x2="20" y2="13"/>
+          </svg>
+        </button>
       </nav>
+
+      {/* ── Mobile nav menu ── */}
+      {mobileMenuOpen && (
+        <div className="mobile-nav-menu open">
+          <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
+          <a href="#builder" onClick={() => setMobileMenuOpen(false)}>Build Yours</a>
+          <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
+          <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+          <Link href="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
+          <Link href="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
+          <Link href="/chat" className="nav-cta" style={{ marginTop: 8 }} onClick={() => setMobileMenuOpen(false)}><span>Build Free →</span></Link>
+        </div>
+      )}
 
       {/* ── 1. HERO ── */}
       <section className="hero" style={{ paddingTop: 'clamp(120px, 15vw, 180px)' }}>

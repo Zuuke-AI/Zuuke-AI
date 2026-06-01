@@ -94,8 +94,18 @@ async function fetchBuild(id: string): Promise<Build | null> {
       .select('id, title, budget, use_case, raw_markdown, created_at, vote_score, upvotes, downvotes, comment_count, user_id, profiles:user_id(username, first_name)')
       .eq('id', id)
       .single()
+
+    if (error?.code === '42703') {
+      // New columns not yet migrated — fetch without them
+      const { data: fallback, error: e2 } = await supabase
+        .from('builds')
+        .select('id, title, budget, use_case, raw_markdown, created_at, user_id')
+        .eq('id', id)
+        .single()
+      if (e2 || !fallback) return null
+      return { ...(fallback as Record<string, unknown>), vote_score: 0, upvotes: 0, downvotes: 0, comment_count: 0, profiles: null } as Build
+    }
     if (error || !data) return null
-    // Supabase returns profiles as array for FK joins; normalize to single object
     const raw = data as Record<string, unknown>
     const profiles = Array.isArray(raw.profiles) ? (raw.profiles[0] ?? null) : raw.profiles
     return { ...raw, profiles } as Build

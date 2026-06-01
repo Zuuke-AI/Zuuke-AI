@@ -234,6 +234,7 @@ export default function LandingPage() {
         <div className="nav-links">
           <a href="#builder">Build Yours</a>
           <a href="#features">Features</a>
+          <Link href="/community">Community</Link>
           <a href="#pricing">Pricing</a>
           <Link href="/about">About Us</Link>
         </div>
@@ -264,8 +265,10 @@ export default function LandingPage() {
           <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
           <a href="#builder" onClick={() => setMobileMenuOpen(false)}>Build Yours</a>
           <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
+          <Link href="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
           <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
+          <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
           <Link href="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
           <Link href="/chat" className="nav-cta" style={{ marginTop: 8 }} onClick={() => setMobileMenuOpen(false)}><span>Build Free →</span></Link>
         </div>

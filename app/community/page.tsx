@@ -39,27 +39,44 @@ interface Build {
 async function fetchBuilds(sort: Sort): Promise<Build[]> {
   const supabase = createServerClient()
 
-  let query = supabase
-    .from('builds')
-    .select('id, title, budget, use_case, created_at, vote_score, upvotes, downvotes, comment_count, user_id, profiles:user_id(username, first_name)')
-    .limit(50)
+  try {
+    let query = supabase
+      .from('builds')
+      .select('id, title, budget, use_case, created_at, vote_score, upvotes, downvotes, comment_count, user_id, profiles:user_id(username, first_name)')
+      .limit(50)
 
-  if (sort === 'hot') {
-    // Last 30 days, by vote_score then recency
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    query = query.gte('created_at', cutoff).order('vote_score', { ascending: false }).order('created_at', { ascending: false })
-  } else if (sort === 'top') {
-    query = query.order('vote_score', { ascending: false }).order('created_at', { ascending: false })
-  } else {
-    query = query.order('created_at', { ascending: false })
+    if (sort === 'hot') {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      query = query.gte('created_at', cutoff).order('vote_score', { ascending: false }).order('created_at', { ascending: false })
+    } else if (sort === 'top') {
+      query = query.order('vote_score', { ascending: false }).order('created_at', { ascending: false })
+    } else {
+      query = query.order('created_at', { ascending: false })
+    }
+
+    const { data, error } = await query
+    if (error) {
+      // If new columns don't exist yet (SQL migration not run), fall back gracefully
+      if (error.code === '42703') {
+        const { data: fallback } = await supabase
+          .from('builds')
+          .select('id, title, budget, use_case, created_at, user_id')
+          .order('created_at', { ascending: false })
+          .limit(50)
+        return ((fallback ?? []) as Record<string, unknown>[]).map(b => ({
+          ...b,
+          vote_score: 0, upvotes: 0, downvotes: 0, comment_count: 0, profiles: null,
+        })) as Build[]
+      }
+      return []
+    }
+    return ((data ?? []) as Record<string, unknown>[]).map(b => ({
+      ...b,
+      profiles: Array.isArray(b.profiles) ? (b.profiles[0] ?? null) : b.profiles,
+    })) as Build[]
+  } catch {
+    return []
   }
-
-  const { data } = await query
-  // Normalize supabase FK array joins to single object
-  return ((data ?? []) as Record<string, unknown>[]).map(b => ({
-    ...b,
-    profiles: Array.isArray(b.profiles) ? (b.profiles[0] ?? null) : b.profiles,
-  })) as Build[]
 }
 
 export default async function CommunityPage({

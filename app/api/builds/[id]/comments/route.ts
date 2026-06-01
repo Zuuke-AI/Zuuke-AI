@@ -1,7 +1,24 @@
 import { createServerClient } from '@/lib/supabase'
 import { getUserFromRequest } from '@/lib/auth'
 
-/** GET /api/builds/[id]/comments — fetch all comments for a build (with author usernames) */
+type ProfileMap = Record<string, { username: string | null; first_name: string | null }>
+
+async function attachProfiles(
+  supabase: ReturnType<typeof createServerClient>,
+  comments: { user_id: string }[]
+): Promise<ProfileMap> {
+  const userIds = [...new Set(comments.map(c => c.user_id).filter(Boolean))]
+  if (!userIds.length) return {}
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, username, first_name')
+    .in('id', userIds)
+  const map: ProfileMap = {}
+  for (const p of data ?? []) map[p.id] = { username: p.username ?? null, first_name: p.first_name ?? null }
+  return map
+}
+
+/** GET /api/builds/[id]/comments */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -11,19 +28,25 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('comments')
-    .select(`
-      id, parent_id, content, vote_score, upvotes, downvotes, created_at, user_id,
-      profiles:user_id ( username, first_name )
-    `)
+    .select('id, parent_id, content, vote_score, upvotes, downvotes, created_at, user_id')
     .eq('build_id', buildId)
     .order('vote_score', { ascending: false })
     .order('created_at', { ascending: true })
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
-  return Response.json({ comments: data ?? [] })
+
+  const comments = data ?? []
+  const profileMap = await attachProfiles(supabase, comments)
+
+  const result = comments.map(c => ({
+    ...c,
+    profiles: profileMap[c.user_id] ?? null,
+  }))
+
+  return Response.json({ comments: result })
 }
 
-/** POST /api/builds/[id]/comments — post a new comment */
+/** POST /api/builds/[id]/comments */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -51,22 +74,23 @@ export async function POST(
       parent_id: parent_id ?? null,
       content: content.trim(),
     })
-    .select(`
-      id, parent_id, content, vote_score, upvotes, downvotes, created_at, user_id,
-      profiles:user_id ( username, first_name )
-    `)
+    .select('id, parent_id, content, vote_score, upvotes, downvotes, created_at, user_id')
     .single()
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  // Recount and update comment_count on build
+  // Attach profile
+  const profileMap = await attachProfiles(supabase, [data])
+  const comment = { ...data, profiles: profileMap[data.user_id] ?? null }
+
+  // Update comment_count on build
   const { count } = await supabase
     .from('comments')
     .select('id', { count: 'exact', head: true })
     .eq('build_id', buildId)
   await supabase.from('builds').update({ comment_count: count ?? 0 }).eq('id', buildId)
 
-  return Response.json({ comment: data })
+  return Response.json({ comment })
 }
 
 /** DELETE /api/builds/[id]/comments?comment_id=xxx */
@@ -93,7 +117,6 @@ export async function DELETE(
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  // Recount
   const { count } = await supabase
     .from('comments')
     .select('id', { count: 'exact', head: true })

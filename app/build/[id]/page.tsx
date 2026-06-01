@@ -89,26 +89,28 @@ interface Build {
 async function fetchBuild(id: string): Promise<Build | null> {
   try {
     const supabase = createServerClient()
+
+    // Fetch build without FK join (builds.user_id references auth.users, not profiles)
     const { data, error } = await supabase
       .from('builds')
-      .select('id, title, budget, use_case, raw_markdown, created_at, vote_score, upvotes, downvotes, comment_count, user_id, profiles:user_id(username, first_name)')
+      .select('id, title, budget, use_case, raw_markdown, created_at, vote_score, upvotes, downvotes, comment_count, user_id')
       .eq('id', id)
       .single()
 
-    if (error?.code === '42703') {
-      // New columns not yet migrated — fetch without them
-      const { data: fallback, error: e2 } = await supabase
-        .from('builds')
-        .select('id, title, budget, use_case, raw_markdown, created_at, user_id')
-        .eq('id', id)
-        .single()
-      if (e2 || !fallback) return null
-      return { ...(fallback as Record<string, unknown>), vote_score: 0, upvotes: 0, downvotes: 0, comment_count: 0, profiles: null } as Build
-    }
     if (error || !data) return null
-    const raw = data as Record<string, unknown>
-    const profiles = Array.isArray(raw.profiles) ? (raw.profiles[0] ?? null) : raw.profiles
-    return { ...raw, profiles } as Build
+
+    // Separately fetch creator profile
+    let profiles: { username: string | null; first_name: string | null } | null = null
+    if (data.user_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, first_name')
+        .eq('id', data.user_id)
+        .single()
+      if (profile) profiles = { username: profile.username ?? null, first_name: profile.first_name ?? null }
+    }
+
+    return { ...(data as Record<string, unknown>), profiles } as Build
   } catch {
     return null
   }

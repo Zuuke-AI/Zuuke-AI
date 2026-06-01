@@ -40,9 +40,10 @@ async function fetchBuilds(sort: Sort): Promise<Build[]> {
   const supabase = createServerClient()
 
   try {
+    // Step 1: fetch builds (no FK join — builds.user_id → auth.users, not profiles)
     let query = supabase
       .from('builds')
-      .select('id, title, budget, use_case, created_at, vote_score, upvotes, downvotes, comment_count, user_id, profiles:user_id(username, first_name)')
+      .select('id, title, budget, use_case, created_at, vote_score, upvotes, downvotes, comment_count, user_id')
       .limit(50)
 
     if (sort === 'hot') {
@@ -54,25 +55,28 @@ async function fetchBuilds(sort: Sort): Promise<Build[]> {
       query = query.order('created_at', { ascending: false })
     }
 
-    const { data, error } = await query
-    if (error) {
-      // If new columns don't exist yet (SQL migration not run), fall back gracefully
-      if (error.code === '42703') {
-        const { data: fallback } = await supabase
-          .from('builds')
-          .select('id, title, budget, use_case, created_at, user_id')
-          .order('created_at', { ascending: false })
-          .limit(50)
-        return ((fallback ?? []) as Record<string, unknown>[]).map(b => ({
-          ...b,
-          vote_score: 0, upvotes: 0, downvotes: 0, comment_count: 0, profiles: null,
-        })) as Build[]
+    const { data: buildsData, error } = await query
+    if (error) return []
+
+    const builds = (buildsData ?? []) as (Omit<Build, 'profiles'> & { user_id: string | null })[]
+
+    // Step 2: fetch profiles for unique user_ids in one query
+    const userIds = [...new Set(builds.map(b => b.user_id).filter(Boolean))] as string[]
+    let profileMap: Record<string, { username: string | null; first_name: string | null }> = {}
+
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, first_name')
+        .in('id', userIds)
+      for (const p of profilesData ?? []) {
+        profileMap[p.id] = { username: p.username ?? null, first_name: p.first_name ?? null }
       }
-      return []
     }
-    return ((data ?? []) as Record<string, unknown>[]).map(b => ({
+
+    return builds.map(b => ({
       ...b,
-      profiles: Array.isArray(b.profiles) ? (b.profiles[0] ?? null) : b.profiles,
+      profiles: b.user_id ? (profileMap[b.user_id] ?? null) : null,
     })) as Build[]
   } catch {
     return []

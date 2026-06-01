@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 interface SiteNavProps {
   /** Pass the current page key to highlight the active link */
-  activePage?: 'about' | 'privacy' | 'terms' | 'affiliate'
+  activePage?: 'about' | 'privacy' | 'terms' | 'affiliate' | 'community'
 }
 
 export default function SiteNav({ activePage }: SiteNavProps) {
@@ -37,6 +37,7 @@ export default function SiteNav({ activePage }: SiteNavProps) {
         <div className="nav-links">
           <Link href="/#how-it-works">How It Works</Link>
           <Link href="/#features">Features</Link>
+          <Link href="/community" className={activePage === 'community' ? 'active' : ''}>Community</Link>
           <Link href="/#pricing">Pricing</Link>
           <Link href="/about" className={activePage === 'about' ? 'active' : ''}>About Us</Link>
         </div>
@@ -62,8 +63,10 @@ export default function SiteNav({ activePage }: SiteNavProps) {
           <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
           <Link href="/#how-it-works" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
           <Link href="/#features" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+          <Link href="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
           <Link href="/#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
+          <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
           <Link href="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
           <Link href="/chat" className="nav-cta" style={{ marginTop: 8 }} onClick={() => setMobileMenuOpen(false)}>
             <span>Start Building →</span>

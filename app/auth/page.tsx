@@ -61,12 +61,29 @@ function AuthForm() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signUp({
+      // Auto-generate a unique username from first+last name
+      const baseUsername = (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '')
+      const suffix = Math.random().toString(36).slice(2, 6)
+      const autoUsername = (baseUsername.slice(0, 20) || 'user') + suffix
+
+      const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
         options: { data: { first_name: firstName, last_name: lastName } },
       })
       if (error) throw error
+
+      // Write username to profile (will be created by trigger or first login)
+      if (data.user) {
+        // Best-effort: upsert profile with username
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          username: autoUsername,
+          subscription_status: 'free',
+          message_count_today: 0,
+        }, { onConflict: 'id', ignoreDuplicates: false })
+      }
+
       setShowSuccess(true)
     } catch (err) {
       setAlert({ msg: (err as Error).message || 'Something went wrong.', type: 'error' })

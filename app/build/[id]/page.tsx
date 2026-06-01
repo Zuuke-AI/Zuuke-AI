@@ -6,6 +6,8 @@ import { createServerClient } from '@/lib/supabase'
 import SiteNav from '@/components/SiteNav'
 import BgCanvas from '@/components/BgCanvas'
 import ShareButtons from './ShareButtons'
+import VoteButtons from './VoteButtons'
+import Comments from './Comments'
 
 // ── Inline helpers (mirrors chat/page.tsx — keeps build page self-contained) ──
 
@@ -76,6 +78,12 @@ interface Build {
   use_case: string | null
   raw_markdown: string
   created_at: string
+  vote_score: number
+  upvotes: number
+  downvotes: number
+  comment_count: number
+  user_id: string | null
+  profiles: { username: string | null; first_name: string | null } | null
 }
 
 async function fetchBuild(id: string): Promise<Build | null> {
@@ -83,14 +91,23 @@ async function fetchBuild(id: string): Promise<Build | null> {
     const supabase = createServerClient()
     const { data, error } = await supabase
       .from('builds')
-      .select('id, title, budget, use_case, raw_markdown, created_at')
+      .select('id, title, budget, use_case, raw_markdown, created_at, vote_score, upvotes, downvotes, comment_count, user_id, profiles:user_id(username, first_name)')
       .eq('id', id)
       .single()
     if (error || !data) return null
-    return data as Build
+    // Supabase returns profiles as array for FK joins; normalize to single object
+    const raw = data as Record<string, unknown>
+    const profiles = Array.isArray(raw.profiles) ? (raw.profiles[0] ?? null) : raw.profiles
+    return { ...raw, profiles } as Build
   } catch {
     return null
   }
+}
+
+function creatorName(build: Build): string {
+  if (build.profiles?.username) return `@${build.profiles.username}`
+  if (build.profiles?.first_name) return build.profiles.first_name
+  return 'Anonymous'
 }
 
 // ── Metadata ───────────────────────────────────────────────────────
@@ -173,6 +190,26 @@ export default async function BuildPage({
 
             <h1 className="build-page-title">{build.title}</h1>
 
+            {/* Creator + votes */}
+            <div className="build-page-creator-row">
+              <span className="build-page-creator">
+                by{' '}
+                {build.profiles?.username ? (
+                  <Link href={`/u/${build.profiles.username}`} className="build-creator-link">
+                    {creatorName(build)}
+                  </Link>
+                ) : (
+                  <span>{creatorName(build)}</span>
+                )}
+              </span>
+              <VoteButtons
+                buildId={build.id}
+                initialScore={build.vote_score ?? 0}
+                initialUpvotes={build.upvotes ?? 0}
+                initialDownvotes={build.downvotes ?? 0}
+              />
+            </div>
+
             {build.use_case && (
               <p className="build-page-prompt">
                 <span style={{ color: 'var(--mist)', marginRight: 6 }}>Prompt:</span>
@@ -191,6 +228,9 @@ export default async function BuildPage({
               dangerouslySetInnerHTML={{ __html: renderedHTML }}
             />
           </div>
+
+          {/* ── Comments ── */}
+          <Comments buildId={build.id} />
 
           {/* ── Bottom CTA ── */}
           <div className="build-page-cta">

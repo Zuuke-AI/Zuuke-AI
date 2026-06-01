@@ -1876,6 +1876,8 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
   transition: border-color 0.2s ease;
 }
 .settings-input-row:focus-within { border-color: var(--cyan); }
+.settings-input-row.ok { border-color: var(--cyan); }
+.settings-input-row.error { border-color: var(--danger); }
 
 .settings-at {
   padding: 0 12px;
@@ -1908,6 +1910,18 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
   letter-spacing: 0.04em;
 }
 .settings-preview.error { color: var(--danger); }
+
+.settings-avail-row {
+  margin-top: 7px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  min-height: 18px;
+}
+.avail-ok    { color: var(--cyan); }
+.avail-taken { color: var(--danger); font-weight: 700; }
+.avail-checking { color: var(--mist); }
+.avail-invalid  { color: var(--mist); }
 
 .settings-alert {
   padding: 10px 14px;

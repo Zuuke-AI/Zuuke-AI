@@ -1,6 +1,27 @@
 import { createServerClient } from '@/lib/supabase'
 import { getUserFromRequest } from '@/lib/auth'
 
+/** GET /api/profile/username?check=someusername — public availability check */
+export async function GET(request: Request) {
+  const url = new URL(request.url)
+  const raw = url.searchParams.get('check') ?? ''
+  const clean = raw.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
+
+  if (clean.length < 3 || clean.length > 30) {
+    return Response.json({ available: false, reason: 'invalid' })
+  }
+
+  // Optionally exclude current user's own username (pass ?userId=xxx)
+  const userId = url.searchParams.get('userId') ?? null
+  const supabase = createServerClient()
+
+  let query = supabase.from('profiles').select('id').eq('username', clean)
+  if (userId) query = query.neq('id', userId)
+
+  const { data } = await query.single()
+  return Response.json({ available: !data, username: clean })
+}
+
 /** PATCH /api/profile/username  body: { username: string } */
 export async function PATCH(request: Request) {
   const user = await getUserFromRequest(request)

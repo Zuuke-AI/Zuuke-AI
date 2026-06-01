@@ -1,23 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase'
 import SiteNav from '@/components/SiteNav'
 import BgCanvas from '@/components/BgCanvas'
 
+type AvailStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'same'
+
 export default function SettingsPage() {
   const router = useRouter()
   const supabase = createBrowserClient()
 
   const [loading, setLoading] = useState(true)
-  const [username, setUsername] = useState('')
+  const [currentUsername, setCurrentUsername] = useState('')
   const [newUsername, setNewUsername] = useState('')
   const [saving, setSaving] = useState(false)
   const [alert, setAlert] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [firstName, setFirstName] = useState('')
   const [userId, setUserId] = useState('')
+  const [availStatus, setAvailStatus] = useState<AvailStatus>('idle')
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -25,8 +30,7 @@ export default function SettingsPage() {
       if (!session) { router.push('/auth?mode=login'); return }
 
       setUserId(session.user.id)
-      const meta = session.user.user_metadata
-      setFirstName(meta?.first_name ?? '')
+      setFirstName(session.user.user_metadata?.first_name ?? '')
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -35,7 +39,7 @@ export default function SettingsPage() {
         .single()
 
       if (profile?.username) {
-        setUsername(profile.username)
+        setCurrentUsername(profile.username)
         setNewUsername(profile.username)
       }
       setLoading(false)
@@ -43,8 +47,45 @@ export default function SettingsPage() {
     load()
   }, [])
 
+  // ── Live availability check (debounced 500ms) ──────────────────────
+  const checkAvailability = useCallback(async (value: string, uid: string, current: string) => {
+    const clean = value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
+
+    if (!clean || clean.length < 3 || clean.length > 30) {
+      setAvailStatus(clean.length > 0 ? 'invalid' : 'idle')
+      return
+    }
+    if (clean === current) {
+      setAvailStatus('same')
+      return
+    }
+
+    setAvailStatus('checking')
+    try {
+      const res = await fetch(`/api/profile/username?check=${encodeURIComponent(clean)}&userId=${uid}`)
+      const data = await res.json()
+      setAvailStatus(data.available ? 'available' : 'taken')
+    } catch {
+      setAvailStatus('idle')
+    }
+  }, [])
+
+  function handleUsernameChange(value: string) {
+    setNewUsername(value)
+    setAlert(null)
+    setAvailStatus('idle')
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      checkAvailability(value, userId, currentUsername)
+    }, 500)
+  }
+
+  // ── Save ───────────────────────────────────────────────────────────
   async function saveUsername() {
     if (!newUsername.trim() || !userId) return
+    if (availStatus === 'taken') return
+
     setSaving(true)
     setAlert(null)
 
@@ -62,18 +103,31 @@ export default function SettingsPage() {
 
     const data = await res.json()
     if (res.ok) {
-      setUsername(data.username)
+      setCurrentUsername(data.username)
       setNewUsername(data.username)
-      setAlert({ msg: 'Username updated!', type: 'success' })
+      setAvailStatus('same')
+      setAlert({ msg: '✓ Username updated successfully!', type: 'success' })
     } else {
       setAlert({ msg: data.error ?? 'Something went wrong.', type: 'error' })
+      if (data.error === 'Username already taken') setAvailStatus('taken')
     }
     setSaving(false)
   }
 
+  // ── Derived state ──────────────────────────────────────────────────
   const clean = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
   const isValid = clean.length >= 3 && clean.length <= 30
-  const changed = clean !== username
+  const changed = clean !== currentUsername
+  const canSave = isValid && changed && availStatus !== 'taken' && availStatus !== 'checking' && availStatus !== 'invalid' && !saving
+
+  function statusIcon() {
+    if (availStatus === 'checking') return <span className="avail-checking">⏳ Checking…</span>
+    if (availStatus === 'available') return <span className="avail-ok">✓ Available</span>
+    if (availStatus === 'taken') return <span className="avail-taken">✗ Already taken</span>
+    if (availStatus === 'same') return <span className="avail-ok">✓ Your current username</span>
+    if (availStatus === 'invalid') return <span className="avail-invalid">Must be 3–30 chars, letters/numbers/underscores only</span>
+    return null
+  }
 
   if (loading) {
     return (
@@ -109,29 +163,23 @@ export default function SettingsPage() {
             <div className="settings-field">
               <label className="settings-label">Username</label>
               <p className="settings-hint">
-                Your public @username shown on builds and comments. Only letters, numbers, and underscores.
+                Your public @username — shown on every build and comment you post. Only letters, numbers, and underscores. Must be unique.
               </p>
-              <div className="settings-input-row">
+              <div className={`settings-input-row${availStatus === 'taken' ? ' error' : availStatus === 'available' ? ' ok' : ''}`}>
                 <span className="settings-at">@</span>
                 <input
                   className="settings-input"
                   type="text"
                   value={newUsername}
-                  onChange={e => {
-                    setNewUsername(e.target.value)
-                    setAlert(null)
-                  }}
+                  onChange={e => handleUsernameChange(e.target.value)}
                   placeholder="yourname"
                   maxLength={30}
                   spellCheck={false}
+                  autoComplete="off"
                 />
               </div>
-              {newUsername && (
-                <p className={`settings-preview ${!isValid ? 'error' : ''}`}>
-                  {isValid
-                    ? `Will appear as @${clean}`
-                    : 'Must be 3–30 characters, letters/numbers/underscores only'}
-                </p>
+              {newUsername.length > 0 && (
+                <div className="settings-avail-row">{statusIcon()}</div>
               )}
             </div>
 
@@ -144,12 +192,12 @@ export default function SettingsPage() {
                 className="btn-primary"
                 style={{ padding: '12px 32px', fontSize: 13 }}
                 onClick={saveUsername}
-                disabled={saving || !isValid || !changed}
+                disabled={!canSave}
               >
                 {saving ? 'Saving…' : 'Save Username'}
               </button>
-              {username && (
-                <Link href={`/u/${username}`} className="btn-secondary" style={{ padding: '11px 28px', fontSize: 13 }}>
+              {currentUsername && (
+                <Link href={`/u/${currentUsername}`} className="btn-secondary" style={{ padding: '11px 28px', fontSize: 13 }}>
                   View Profile →
                 </Link>
               )}

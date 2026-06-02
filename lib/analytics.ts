@@ -9,6 +9,7 @@ export type AnalyticsEvent =
   | 'build_viewed'
   | 'build_shared'
   | 'copy_link_clicked'
+  | 'build_posted_community'
 
 export interface EventProperties {
   buildId?: string

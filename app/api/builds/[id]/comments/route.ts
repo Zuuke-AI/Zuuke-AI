@@ -90,6 +90,36 @@ export async function POST(
     .eq('build_id', buildId)
   await supabase.from('builds').update({ comment_count: count ?? 0 }).eq('id', buildId)
 
+  // Fire notification to build owner (new comment) or parent comment author (reply) — fire-and-forget
+  const notifType = parent_id ? 'new_reply' : 'new_comment'
+  void (async () => {
+    try {
+      if (!parent_id) {
+        const { data: build } = await supabase.from('builds').select('user_id').eq('id', buildId).single()
+        if (build?.user_id && build.user_id !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: build.user_id,
+            type: notifType,
+            from_user_id: user.id,
+            build_id: buildId,
+            comment_id: data.id,
+          })
+        }
+      } else {
+        const { data: parentComment } = await supabase.from('comments').select('user_id').eq('id', parent_id).single()
+        if (parentComment?.user_id && parentComment.user_id !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: parentComment.user_id,
+            type: 'new_reply',
+            from_user_id: user.id,
+            build_id: buildId,
+            comment_id: data.id,
+          })
+        }
+      }
+    } catch { /* noop */ }
+  })()
+
   return Response.json({ comment })
 }
 

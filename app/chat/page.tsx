@@ -195,6 +195,8 @@ function ChatApp() {
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
 
   const [userId, setUserId] = useState<string | null>(null)
+  const [profileUsername, setProfileUsername] = useState<string | null>(null)
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
 
   const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -257,6 +259,13 @@ function ChatApp() {
         setIsGuest(false)
         setUserId(session.user.id)
         fetchUserStatus(session.access_token)
+
+        // Load profile for sidebar avatar + profile link
+        supabase.from('profiles').select('username, avatar_url').eq('id', session.user.id).single()
+          .then(({ data: prof }) => {
+            if (prof?.username) setProfileUsername(prof.username)
+            if (prof?.avatar_url) setProfileAvatar(prof.avatar_url)
+          })
 
         // Load chats from Supabase cloud
         const cloudChats = await loadChatsFromCloud(session.user.id)
@@ -923,6 +932,23 @@ function ChatApp() {
             ) : null}
           </div>
 
+          {!isGuest && profileUsername && (
+            <Link href={`/u/${profileUsername}`} className="sidebar-profile-row">
+              <div className="sidebar-profile-avatar">
+                {profileAvatar
+                  ? <img src={profileAvatar} alt="avatar" className="sidebar-profile-img" />
+                  : <span className="sidebar-profile-initial">{(userStatus?.name || profileUsername || 'U')[0].toUpperCase()}</span>
+                }
+              </div>
+              <div className="sidebar-profile-info">
+                <div className="sidebar-profile-name">{userStatus?.name || profileUsername}</div>
+                <div className="sidebar-profile-handle">@{profileUsername}</div>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', color: 'var(--mist)', flexShrink: 0 }}>
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </Link>
+          )}
           <Link href="/" className="back-link">Back to Home</Link>
           {!isGuest && (
             <button className="logout-link" onClick={handleLogout}>← Sign Out</button>

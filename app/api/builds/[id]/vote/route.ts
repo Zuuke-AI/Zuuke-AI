@@ -62,5 +62,22 @@ export async function POST(
     .update({ upvotes, downvotes, vote_score })
     .eq('id', buildId)
 
+  // Fire notification to build owner if this is an upvote (fire-and-forget)
+  if (vote === 1 && prevVote !== 1) {
+    void (async () => {
+      try {
+        const { data: build } = await supabase.from('builds').select('user_id').eq('id', buildId).single()
+        if (build?.user_id && build.user_id !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: build.user_id,
+            type: 'vote_build',
+            from_user_id: user.id,
+            build_id: buildId,
+          })
+        }
+      } catch { /* noop */ }
+    })()
+  }
+
   return Response.json({ vote, prevVote, upvotes, downvotes, vote_score })
 }

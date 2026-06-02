@@ -27,16 +27,18 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Zuuke — Build Your Perfect Rig In Seconds',
-  description: 'Tell Zuuke your budget and use case. Get a complete, compatible, optimized PC build in seconds.',
+  description: 'Tell Zuuke your budget and use case. Get a complete, compatible, optimized PC build recommendation in under 30 seconds — free.',
   metadataBase: new URL('https://zuuke.shop'),
   alternates: {
     canonical: 'https://zuuke.shop',
   },
   icons: {
     icon: [
-      { url: '/favicon.ico',    sizes: '32x32',  type: 'image/png' },
+      { url: '/favicon-192.png',  sizes: '192x192', type: 'image/png' },
       { url: '/zuukelogo-sq.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon-32.png',   sizes: '32x32',   type: 'image/png' },
     ],
+    shortcut: '/favicon.ico',
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
   },
   openGraph: {

@@ -21,12 +21,23 @@ export const metadata: Metadata = {
 export const revalidate = 30
 
 type Sort = 'hot' | 'new' | 'top'
+type UseCase = 'gaming' | 'editing' | 'streaming' | '3d' | 'ai' | ''
+
+const USE_CASE_FILTERS: { label: string; value: UseCase; pattern: string }[] = [
+  { label: '🎮 Gaming', value: 'gaming', pattern: 'gaming' },
+  { label: '🎬 Editing', value: 'editing', pattern: 'editing' },
+  { label: '📡 Streaming', value: 'streaming', pattern: 'streaming' },
+  { label: '🎨 3D / VFX', value: '3d', pattern: '3d' },
+  { label: '🤖 AI / ML', value: 'ai', pattern: 'ai' },
+]
 
 interface Build {
   id: string
   title: string
   budget: string | null
   use_case: string | null
+  community_body: string | null
+  image_url: string | null
   created_at: string
   vote_score: number
   upvotes: number
@@ -36,15 +47,22 @@ interface Build {
   profiles: { username: string | null; first_name: string | null } | null
 }
 
-async function fetchBuilds(sort: Sort): Promise<Build[]> {
+async function fetchBuilds(sort: Sort, useCase: UseCase): Promise<Build[]> {
   const supabase = createServerClient()
 
   try {
-    // Step 1: fetch builds (no FK join — builds.user_id → auth.users, not profiles)
     let query = supabase
       .from('builds')
-      .select('id, title, budget, use_case, created_at, vote_score, upvotes, downvotes, comment_count, user_id')
+      .select('id, title, budget, use_case, community_body, image_url, created_at, vote_score, upvotes, downvotes, comment_count, user_id')
+      .eq('is_public', true)
+      .not('user_id', 'is', null)
       .limit(50)
+
+    // Use-case filter
+    if (useCase) {
+      const pattern = USE_CASE_FILTERS.find(f => f.value === useCase)?.pattern ?? useCase
+      query = query.ilike('use_case', `%${pattern}%`)
+    }
 
     if (sort === 'hot') {
       const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -60,7 +78,6 @@ async function fetchBuilds(sort: Sort): Promise<Build[]> {
 
     const builds = (buildsData ?? []) as (Omit<Build, 'profiles'> & { user_id: string | null })[]
 
-    // Step 2: fetch profiles for unique user_ids in one query
     const userIds = [...new Set(builds.map(b => b.user_id).filter(Boolean))] as string[]
     let profileMap: Record<string, { username: string | null; first_name: string | null }> = {}
 
@@ -86,11 +103,12 @@ async function fetchBuilds(sort: Sort): Promise<Build[]> {
 export default async function CommunityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string }>
+  searchParams: Promise<{ sort?: string; use_case?: string }>
 }) {
-  const { sort: sortParam } = await searchParams
+  const { sort: sortParam, use_case: useCaseParam } = await searchParams
   const sort: Sort = sortParam === 'top' ? 'top' : sortParam === 'new' ? 'new' : 'hot'
-  const builds = await fetchBuilds(sort)
+  const useCase: UseCase = (USE_CASE_FILTERS.find(f => f.value === useCaseParam)?.value) ?? ''
+  const builds = await fetchBuilds(sort, useCase)
 
   return (
     <>
@@ -117,31 +135,45 @@ export default async function CommunityPage({
 
           {/* Sort tabs */}
           <div className="community-sort-row">
-            <Link
-              href="/community?sort=hot"
-              className={`community-sort-tab${sort === 'hot' ? ' active' : ''}`}
-            >
-              🔥 Hot
-            </Link>
-            <Link
-              href="/community?sort=new"
-              className={`community-sort-tab${sort === 'new' ? ' active' : ''}`}
-            >
-              ✨ New
-            </Link>
-            <Link
-              href="/community?sort=top"
-              className={`community-sort-tab${sort === 'top' ? ' active' : ''}`}
-            >
-              🏆 Top
+            <Link href={`/community?sort=hot${useCase ? `&use_case=${useCase}` : ''}`} className={`community-sort-tab${sort === 'hot' ? ' active' : ''}`}>🔥 Hot</Link>
+            <Link href={`/community?sort=new${useCase ? `&use_case=${useCase}` : ''}`} className={`community-sort-tab${sort === 'new' ? ' active' : ''}`}>✨ New</Link>
+            <Link href={`/community?sort=top${useCase ? `&use_case=${useCase}` : ''}`} className={`community-sort-tab${sort === 'top' ? ' active' : ''}`}>🏆 Top</Link>
+            <Link href="/compare" className="community-sort-tab" style={{ marginLeft: 'auto' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="3" width="9" height="14" rx="1"/><rect x="13" y="3" width="9" height="14" rx="1"/>
+              </svg>
+              Compare
             </Link>
             <span className="community-sort-count">{builds.length} builds</span>
+          </div>
+
+          {/* Use-case filter chips */}
+          <div className="community-filter-row">
+            <Link
+              href={`/community?sort=${sort}`}
+              className={`community-filter-chip${!useCase ? ' active' : ''}`}
+            >
+              All
+            </Link>
+            {USE_CASE_FILTERS.map(f => (
+              <Link
+                key={f.value}
+                href={`/community?sort=${sort}&use_case=${f.value}`}
+                className={`community-filter-chip${useCase === f.value ? ' active' : ''}`}
+              >
+                {f.label}
+              </Link>
+            ))}
           </div>
 
           {/* Feed */}
           {builds.length === 0 ? (
             <div className="community-empty">
-              <p>No builds yet{sort === 'hot' ? ' in the last 30 days' : ''}.</p>
+              <p>
+                {useCase
+                  ? `No ${USE_CASE_FILTERS.find(f => f.value === useCase)?.label ?? useCase} builds yet.`
+                  : `No builds yet${sort === 'hot' ? ' in the last 30 days' : ''}.`}
+              </p>
               <Link href="/chat" className="btn-secondary" style={{ marginTop: 20 }}>
                 Be the first →
               </Link>

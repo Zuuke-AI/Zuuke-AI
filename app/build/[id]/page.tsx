@@ -8,6 +8,7 @@ import BgCanvas from '@/components/BgCanvas'
 import ShareButtons from './ShareButtons'
 import VoteButtons from './VoteButtons'
 import Comments from './Comments'
+import RemixButton from './RemixButton'
 
 // ── Inline helpers (mirrors chat/page.tsx — keeps build page self-contained) ──
 
@@ -155,7 +156,7 @@ export async function generateMetadata({
       type: 'article',
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: `${build.title} · Zuuke`,
       description: desc,
     },
@@ -229,8 +230,24 @@ export default async function BuildPage({
               </p>
             )}
 
-            {/* Share panel */}
-            <ShareButtons buildId={build.id} buildTitle={build.title} />
+            {/* Remix + Share */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+              <RemixButton
+                buildTitle={build.title}
+                buildBudget={build.budget}
+                buildUseCase={build.use_case}
+              />
+              <Link
+                href={`/compare?a=${build.id}`}
+                className="build-compare-btn"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="3" width="9" height="14" rx="1" /><rect x="13" y="3" width="9" height="14" rx="1" />
+                </svg>
+                Compare
+              </Link>
+            </div>
+            <ShareButtons buildId={build.id} buildTitle={build.title} buildOwnerId={build.user_id} />
           </div>
 
           {/* ── Build content (full AI response) ── */}

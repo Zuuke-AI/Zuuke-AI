@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import BgCanvas from '@/components/BgCanvas'
+import SiteNav from '@/components/SiteNav'
 import { createBrowserClient } from '@/lib/supabase'
 
 // ── Quiz Data ─────────────────────────────────────────────────────
@@ -109,32 +110,10 @@ const COMPARE_SOURCES = [
 
 export default function LandingPage() {
   const router = useRouter()
-  const [userName, setUserName] = useState<string | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [budget, setBudget] = useState<string | null>(null)
   const [useCase, setUseCase] = useState<string | null>(null)
   const [goal, setGoal] = useState<string | null>(null)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const navRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const onScroll = () => navRef.current?.classList.toggle('scrolled', window.scrollY > 40)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  useEffect(() => {
-    const supabase = createBrowserClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        const name =
-          (session.user.user_metadata as Record<string, string>)?.first_name ||
-          session.user.email?.split('@')[0] ||
-          null
-        setUserName(name)
-      }
-    })
-  }, [])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -224,62 +203,14 @@ export default function LandingPage() {
       </div>
 
       {/* ── Nav ── */}
-      <nav ref={navRef} className="nav" style={{ top: 'var(--promo-h, 37px)' }}>
-        <Link href="/" className="nav-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
-          <div className="nav-logo-mark">
-            <img src="/zuukelogo-sq.png" style={{width:38,height:38,objectFit:"cover"}} alt="Zuuke logo"/>
-          </div>
-          <span className="nav-wordmark">ZUUKE<span>.</span></span>
-        </Link>
-        <div className="nav-links">
-          <a href="#builder">Build Yours</a>
-          <a href="#features">Features</a>
-          <Link href="/community">Community</Link>
-          <a href="#pricing">Pricing</a>
-          <Link href="/about">About Us</Link>
-        </div>
-        {userName ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--mist)' }}>
-              Hi, <span style={{ color: 'var(--cyan)' }}>{userName}</span>
-            </span>
-            <Link href="/chat" className="nav-cta"><span>Go to Chat →</span></Link>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link href="/auth?mode=login" className="nav-login">Log In</Link>
-            <Link href="/chat" className="nav-cta"><span>Build Free →</span></Link>
-          </div>
-        )}
-        {/* Hamburger — mobile only */}
-        <button className="nav-hamburger" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
-          <svg width="20" height="14" viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="0" y1="1" x2="20" y2="1"/><line x1="0" y1="7" x2="20" y2="7"/><line x1="0" y1="13" x2="20" y2="13"/>
-          </svg>
-        </button>
-      </nav>
-
-      {/* ── Mobile nav menu ── */}
-      {mobileMenuOpen && (
-        <div className="mobile-nav-menu open">
-          <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
-          <a href="#builder" onClick={() => setMobileMenuOpen(false)}>Build Yours</a>
-          <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
-          <Link href="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
-          <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
-          <Link href="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
-          <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
-          <Link href="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
-          <Link href="/chat" className="nav-cta" style={{ marginTop: 8 }} onClick={() => setMobileMenuOpen(false)}><span>Build Free →</span></Link>
-        </div>
-      )}
+      <SiteNav style={{ top: 'var(--promo-h, 37px)' }} />
 
       {/* ── 1. HERO ── */}
       <section className="hero" style={{ paddingTop: 'clamp(120px, 15vw, 180px)' }}>
         <div className="hero-eyebrow">AI-Powered · Personalized · Instant</div>
         <h1 className="hero-title">
-          <span className="line-1">BUILD YOUR</span>
-          <span className="line-2">PERFECT RIG</span>
+          <span className="line-1">BUILD YOUR </span>
+          <span className="line-2">PERFECT RIG </span>
           <span className="line-3">IN SECONDS</span>
         </h1>
         <p className="hero-sub">
@@ -608,7 +539,53 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 7. FINAL CTA ── */}
+      {/* ── 7. COMMUNITY ── */}
+      <section className="community-hp-section" id="community" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="community-hp-inner">
+          <div className="section-label">Community</div>
+          <h2 className="section-title">BUILD TOGETHER.<br /><span style={{ color: 'var(--cyan)' }}>LEARN TOGETHER.</span></h2>
+          <p className="community-hp-sub">
+            The Zuuke community is where PC builders share their AI-generated rigs, vote on the best setups, ask questions, and inspire each other. Real builds from real people — not paid reviews.
+          </p>
+
+          {/* Feature pills */}
+          <div className="community-hp-pills">
+            <div className="community-hp-pill">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 8H4l8-8z"/></svg>
+              Vote on builds
+            </div>
+            <div className="community-hp-pill">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Comment & discuss
+            </div>
+            <div className="community-hp-pill">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Share build photos
+            </div>
+            <div className="community-hp-pill">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Public profiles
+            </div>
+          </div>
+
+          <div className="community-hp-actions">
+            <Link href="/community" className="btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              Browse Community Builds
+            </Link>
+            <Link href="/chat" className="btn-secondary">
+              Generate Your Build →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. FINAL CTA ── */}
       <section className="final-cta" style={{ position: 'relative', zIndex: 1 }}>
         <div className="final-cta-eyebrow">Ready to build?</div>
         <div className="final-cta-title">

@@ -1,0 +1,51 @@
+import { createServerClient } from '@/lib/supabase'
+import { getUserFromRequest } from '@/lib/auth'
+
+/** POST /api/storage/upload-build-image
+ *  Accepts multipart form-data with fields: "file" (image) and "buildId" (string).
+ *  Uses the service role key (bypasses RLS) to upload to the build-images bucket.
+ *  Returns { url: string } on success. */
+export async function POST(request: Request) {
+  const user = await getUserFromRequest(request)
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const formData = await request.formData()
+  const file = formData.get('file') as File | null
+  const buildId = formData.get('buildId') as string | null
+
+  if (!file) return Response.json({ error: 'No file provided' }, { status: 400 })
+  if (!buildId) return Response.json({ error: 'No buildId provided' }, { status: 400 })
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  if (!allowedTypes.includes(file.type)) {
+    return Response.json({ error: 'Only JPEG, PNG, WEBP, and GIF images are allowed' }, { status: 400 })
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    return Response.json({ error: 'File must be under 8MB' }, { status: 400 })
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const path = `builds/${buildId}/${Date.now()}.${ext}`
+
+  const bytes = await file.arrayBuffer()
+  const buffer = Buffer.from(bytes)
+
+  // Service role client — bypasses RLS
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase.storage
+    .from('build-images')
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: true,
+    })
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+
+  const { data: { publicUrl } } = supabase.storage.from('build-images').getPublicUrl(data.path)
+
+  return Response.json({ url: publicUrl })
+}

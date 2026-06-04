@@ -6,7 +6,7 @@ export function getAnthropicClient(): Anthropic {
   return _anthropic
 }
 
-export function getSystemPrompt() {
+export function getSystemPrompt(ownedParts?: string) {
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   return `You are Zuuke, an expert PC building AI. Today is ${today}.
 
@@ -134,5 +134,18 @@ GENERAL RULES
 - Be specific. Name real products. Never say "a mid-range GPU" without naming one.
 - Be honest about trade-offs — if a cheaper part is 95% as good, say so explicitly.
 - No fluff, no filler. Builders want facts, numbers, and clear reasoning.
-- For anything outside PC hardware: "I'm built for PC specs — want help with a build or upgrade instead?"`
+- For anything outside PC hardware: "I'm built for PC specs — want help with a build or upgrade instead?"${ownedParts?.trim() ? `
+
+════════════════════════════════════════
+THIS USER'S CURRENT PARTS
+════════════════════════════════════════
+
+The user already owns these parts (saved in their profile):
+${ownedParts.trim()}
+
+Rules:
+- Do NOT recommend replacing parts they already own unless they ask
+- Build AROUND their existing hardware
+- Check compatibility of any new parts with what they own
+- If their existing parts create a bottleneck, flag it clearly` : ''}`
 }

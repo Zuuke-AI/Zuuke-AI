@@ -112,6 +112,7 @@ function AuthForm() {
       if (error) throw error
 
       if (data.user) {
+        const refCode = searchParams.get('ref')?.toUpperCase() ?? null
         await supabase.from('profiles').upsert(
           {
             id: data.user.id,
@@ -119,6 +120,7 @@ function AuthForm() {
             first_name: firstName.trim(),
             subscription_status: 'free',
             message_count_today: 0,
+            ...(refCode ? { referred_by: refCode } : {}),
           },
           { onConflict: 'id', ignoreDuplicates: false }
         )

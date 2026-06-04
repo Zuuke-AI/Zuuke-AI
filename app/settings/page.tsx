@@ -37,6 +37,14 @@ function SettingsContent() {
   const [showNewPwd, setShowNewPwd] = useState(false)
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
 
+  // Parts I Own
+  const [ownedParts, setOwnedParts] = useState('')
+  const [savingParts, setSavingParts] = useState(false)
+
+  // Referral
+  const [referralCode, setReferralCode] = useState('')
+  const [referralCopied, setReferralCopied] = useState(false)
+
   // Subscription
   const [subscriptionStatus, setSubscriptionStatus] = useState('free')
 
@@ -74,13 +82,20 @@ function SettingsContent() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, subscription_status, bio, avatar_url, first_name')
+        .select('username, subscription_status, bio, avatar_url, first_name, owned_parts')
         .eq('id', session.user.id)
         .single()
 
       if (profile?.subscription_status) setSubscriptionStatus(profile.subscription_status)
       if (profile?.bio) setBio(profile.bio)
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
+      if (profile?.owned_parts) setOwnedParts(profile.owned_parts)
+
+      // Fetch/generate referral code
+      try {
+        const refRes = await fetch('/api/referral', { headers: { Authorization: `Bearer ${session.access_token}` } })
+        if (refRes.ok) setReferralCode((await refRes.json()).code)
+      } catch { /* noop */ }
 
       const meta = session.user.user_metadata ?? {}
       const name = profile?.first_name ?? meta.first_name ?? meta.full_name?.split(' ')[0] ?? ''
@@ -221,6 +236,32 @@ function SettingsContent() {
       setAlert({ msg: json.error ?? 'Failed to update profile.', type: 'error', section: 'profile' })
     }
     setSavingProfile(false)
+  }
+
+  // ── Save owned parts ───────────────────────────────────────────────────────
+  async function saveOwnedParts() {
+    setSavingParts(true)
+    setAlert(null)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const res = await fetch('/api/profile/update', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ owned_parts: ownedParts }),
+    })
+    if (res.ok) {
+      setAlert({ msg: '✓ Parts saved! Zuuke will now build around what you own.', type: 'success', section: 'parts' })
+    } else {
+      setAlert({ msg: 'Failed to save.', type: 'error', section: 'parts' })
+    }
+    setSavingParts(false)
+  }
+
+  async function copyReferralLink() {
+    const link = `https://zuuke.shop/auth?ref=${referralCode}`
+    await navigator.clipboard.writeText(link).catch(() => {})
+    setReferralCopied(true)
+    setTimeout(() => setReferralCopied(false), 2500)
   }
 
   // ── Change email ───────────────────────────────────────────────────────────
@@ -516,6 +557,50 @@ function SettingsContent() {
               {savingPassword ? 'Updating…' : 'Update Password'}
             </button>
           </div>
+
+          {/* ── Parts I Own ── */}
+          <div className="settings-card" style={{ marginTop: 12 }}>
+            <h2 className="settings-section-title">Parts I Own</h2>
+            <p className="settings-hint">Tell Zuuke what hardware you already have. It will build around your existing parts instead of recommending them again.</p>
+            <div className="form-group" style={{ marginTop: 14 }}>
+              <textarea
+                className="settings-textarea"
+                value={ownedParts}
+                onChange={e => setOwnedParts(e.target.value)}
+                placeholder={`List your current parts, e.g:\nCPU: Intel i7-9700K\nGPU: RTX 2070\nRAM: 16GB DDR4-3200\nMotherboard: ASUS Z390-F\nCase: NZXT H510\nPSU: Corsair RM650x`}
+                rows={6}
+                maxLength={1000}
+              />
+              <div style={{ fontSize: 10, color: 'var(--mist)', textAlign: 'right', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{ownedParts.length}/1000</div>
+            </div>
+            {alert?.section === 'parts' && (
+              <div className={`settings-alert ${alert.type}`}>{alert.msg}</div>
+            )}
+            <button className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, marginTop: 8 }} onClick={saveOwnedParts} disabled={savingParts}>
+              {savingParts ? 'Saving…' : 'Save My Parts'}
+            </button>
+          </div>
+
+          {/* ── Referral ── */}
+          {referralCode && (
+            <div className="settings-card" style={{ marginTop: 12 }}>
+              <h2 className="settings-section-title">Refer a Friend</h2>
+              <p className="settings-hint">Share your link. When someone signs up through it, they'll be credited to you — and you'll both be recognized in the community.</p>
+              <div className="settings-input-row" style={{ marginTop: 14 }}>
+                <input
+                  className="settings-input"
+                  type="text"
+                  value={`zuuke.shop/auth?ref=${referralCode}`}
+                  readOnly
+                  onClick={e => (e.target as HTMLInputElement).select()}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
+                />
+              </div>
+              <button className="btn-secondary" style={{ padding: '10px 24px', fontSize: 12, marginTop: 12 }} onClick={copyReferralLink}>
+                {referralCopied ? '✓ Copied!' : 'Copy Referral Link'}
+              </button>
+            </div>
+          )}
 
           {/* ── Subscription ── */}
           <div className="settings-card" style={{ marginTop: 12 }}>

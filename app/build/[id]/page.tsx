@@ -10,6 +10,8 @@ import ShareButtons from './ShareButtons'
 import VoteButtons from './VoteButtons'
 import Comments from './Comments'
 import RemixButton from './RemixButton'
+import MarkBuiltButton from './MarkBuiltButton'
+import SaveBuildButton from '@/components/SaveBuildButton'
 
 // ── Inline helpers (mirrors chat/page.tsx — keeps build page self-contained) ──
 
@@ -84,6 +86,7 @@ interface Build {
   downvotes: number
   comment_count: number
   user_id: string | null
+  is_built: boolean
   profiles: { username: string | null; first_name: string | null } | null
 }
 
@@ -94,7 +97,7 @@ async function fetchBuild(id: string): Promise<Build | null> {
     // Fetch build without FK join (builds.user_id references auth.users, not profiles)
     const { data, error } = await supabase
       .from('builds')
-      .select('id, title, budget, use_case, raw_markdown, created_at, vote_score, upvotes, downvotes, comment_count, user_id')
+      .select('id, title, budget, use_case, raw_markdown, created_at, vote_score, upvotes, downvotes, comment_count, user_id, is_built')
       .eq('id', id)
       .single()
 
@@ -267,22 +270,26 @@ export default async function BuildPage({
               </p>
             )}
 
-            {/* Remix + Share */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+            {/* Built badge */}
+            {build.is_built && (
+              <div className="build-built-badge">🔧 Built by owner</div>
+            )}
+
+            {/* Actions row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
               <RemixButton
                 buildTitle={build.title}
                 buildBudget={build.budget}
                 buildUseCase={build.use_case}
               />
-              <Link
-                href={`/compare?a=${build.id}`}
-                className="build-compare-btn"
-              >
+              <Link href={`/compare?a=${build.id}`} className="build-compare-btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="2" y="3" width="9" height="14" rx="1" /><rect x="13" y="3" width="9" height="14" rx="1" />
                 </svg>
                 Compare
               </Link>
+              <SaveBuildButton buildId={build.id} buildOwnerId={build.user_id} />
+              <MarkBuiltButton buildId={build.id} buildOwnerId={build.user_id} initialIsBuilt={build.is_built} />
             </div>
             <ShareButtons buildId={build.id} buildTitle={build.title} buildOwnerId={build.user_id} buildBudget={build.budget} />
           </div>

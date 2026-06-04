@@ -11,12 +11,14 @@ export async function PATCH(request: Request) {
     bio?: string
     avatar_url?: string
     first_name?: string
+    owned_parts?: string
   }
 
   const updates: Record<string, unknown> = {}
   if (body.bio !== undefined) updates.bio = body.bio.trim().slice(0, 200)
   if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url
   if (body.first_name !== undefined) updates.first_name = body.first_name.trim().slice(0, 50)
+  if (body.owned_parts !== undefined) updates.owned_parts = body.owned_parts.trim().slice(0, 1000)
 
   if (!Object.keys(updates).length) {
     return Response.json({ error: 'Nothing to update' }, { status: 400 })

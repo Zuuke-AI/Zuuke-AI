@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import SaveBuildButton from '@/components/SaveBuildButton'
 
 interface Build {
   id: string
@@ -157,6 +158,7 @@ export default function BuildCard({ build }: { build: Build }) {
               </svg>
               View Full Build
             </Link>
+            <SaveBuildButton buildId={build.id} buildOwnerId={build.user_id} size="sm" />
           </div>
         </div>
       </div>

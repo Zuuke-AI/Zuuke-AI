@@ -14,6 +14,7 @@ interface Profile {
   last_name: string | null
   bio: string | null
   avatar_url: string | null
+  badges: string[] | null
 }
 
 interface Build {
@@ -33,10 +34,18 @@ async function fetchProfile(username: string): Promise<Profile | null> {
   const supabase = createServerClient()
   const { data } = await supabase
     .from('profiles')
-    .select('id, username, first_name, last_name, bio, avatar_url')
+    .select('id, username, first_name, last_name, bio, avatar_url, badges')
     .eq('username', username.toLowerCase())
     .single()
   return data ?? null
+}
+
+const BADGE_META: Record<string, string> = {
+  first_build:   '🎮 First Build',
+  ten_builds:    '🔥 10 Builds',
+  twenty_five:   '⚡ Builder',
+  fifty_builds:  '🏆 Master Builder',
+  first_share:   '🌐 Community Member',
 }
 
 async function fetchFollowCounts(userId: string): Promise<{ followers: number; following: number }> {
@@ -164,6 +173,17 @@ export default async function UserProfilePage({
                 <EditProfileButton profileId={profile.id} />
                 <FollowButton profileId={profile.id} />
               </div>
+
+              {/* Badges */}
+              {Array.isArray(profile.badges) && profile.badges.length > 0 && (
+                <div className="profile-badges-row">
+                  {profile.badges.map((key: string) => BADGE_META[key] && (
+                    <span key={key} className="profile-badge" title={BADGE_META[key]}>
+                      {BADGE_META[key]}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { getUserFromRequest, checkMessageLimit } from '@/lib/auth'
 import { getAnthropicClient, getSystemPrompt } from '@/lib/anthropic'
+import { createServerClient } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   const user = await getUserFromRequest(request)
@@ -23,6 +24,20 @@ export async function POST(request: Request) {
     return Response.json({ error: 'messages required' }, { status: 400 })
   }
 
+  // Fetch owned parts for personalised system prompt (logged-in users only)
+  let ownedParts: string | undefined
+  if (user) {
+    try {
+      const supabase = createServerClient()
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('owned_parts')
+        .eq('id', user.id)
+        .single()
+      ownedParts = profile?.owned_parts || undefined
+    } catch { /* non-fatal */ }
+  }
+
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
@@ -35,7 +50,7 @@ export async function POST(request: Request) {
         const anthropicStream = getAnthropicClient().messages.stream({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 4096,
-          system: [{ type: 'text', text: getSystemPrompt(), cache_control: { type: 'ephemeral' } }],
+          system: [{ type: 'text', text: getSystemPrompt(ownedParts), cache_control: { type: 'ephemeral' } }],
           messages: messages.map((m: { role: string; content: string }) => ({
             role: m.role as 'user' | 'assistant',
             content: m.content,

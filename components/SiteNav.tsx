@@ -135,6 +135,12 @@ export default function SiteNav({ activePage, style }: SiteNavProps) {
                     </svg>
                     My Builds
                   </Link>
+                  <Link href="/saved" className="nav-profile-item" onClick={() => setProfileMenuOpen(false)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Saved Builds
+                  </Link>
                   <Link href="/chat" className="nav-profile-item" onClick={() => setProfileMenuOpen(false)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -181,6 +187,7 @@ export default function SiteNav({ activePage, style }: SiteNavProps) {
             <>
               {user.username && <Link href={`/u/${user.username}`} onClick={() => setMobileMenuOpen(false)}>My Profile</Link>}
               <Link href="/builds" onClick={() => setMobileMenuOpen(false)}>My Builds</Link>
+              <Link href="/saved" onClick={() => setMobileMenuOpen(false)}>Saved Builds</Link>
               <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
               <button onClick={() => { handleSignOut(); setMobileMenuOpen(false) }} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 14, textAlign: 'left', padding: '12px 0' }}>Sign Out</button>
             </>

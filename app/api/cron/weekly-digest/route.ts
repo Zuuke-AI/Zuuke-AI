@@ -17,6 +17,19 @@ export async function GET(request: Request) {
 
   const supabase = createServerClient()
 
+  // Fetch this week's top community build (Build of the Week)
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: botw } = await supabase
+    .from('builds')
+    .select('id, title, budget, vote_score')
+    .eq('is_public', true)
+    .gte('created_at', oneWeekAgo)
+    .order('vote_score', { ascending: false })
+    .limit(1)
+    .single()
+
+  const featuredBuild = botw ?? null
+
   // Fetch all users who have at least one saved public build
   const { data: buildOwners, error } = await supabase
     .from('builds')
@@ -73,6 +86,7 @@ export async function GET(request: Request) {
         to: userAuth.email,
         firstName,
         builds,
+        featuredBuild,
       })
       sent++
     } catch (e) {

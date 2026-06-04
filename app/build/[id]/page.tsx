@@ -117,6 +117,39 @@ async function fetchBuild(id: string): Promise<Build | null> {
   }
 }
 
+interface SimilarBuild { id: string; title: string; budget: string | null; vote_score: number }
+
+async function fetchSimilarBuilds(build: Build): Promise<SimilarBuild[]> {
+  try {
+    const supabase = createServerClient()
+    // Match by budget first, fall back to use-case keyword
+    const keyword = build.use_case?.split(' ').find(w => w.length > 4) ?? ''
+    let query = supabase
+      .from('builds')
+      .select('id, title, budget, vote_score')
+      .eq('is_public', true)
+      .neq('id', build.id)
+      .order('vote_score', { ascending: false })
+      .limit(4)
+
+    if (build.budget) query = query.eq('budget', build.budget)
+    else if (keyword) query = query.ilike('use_case', `%${keyword}%`)
+
+    const { data } = await query
+    if (data && data.length >= 2) return data as SimilarBuild[]
+
+    // Fallback: just return recent popular builds
+    const { data: fallback } = await supabase
+      .from('builds')
+      .select('id, title, budget, vote_score')
+      .eq('is_public', true)
+      .neq('id', build.id)
+      .order('vote_score', { ascending: false })
+      .limit(4)
+    return (fallback ?? []) as SimilarBuild[]
+  } catch { return [] }
+}
+
 function creatorName(build: Build): string {
   if (build.profiles?.username) return `@${build.profiles.username}`
   if (build.profiles?.first_name) return build.profiles.first_name
@@ -175,7 +208,10 @@ export default async function BuildPage({
 
   if (!build) notFound()
 
-  const buildContent = extractBuildContent(build.raw_markdown)
+  const [buildContent, similarBuilds] = await Promise.all([
+    Promise.resolve(extractBuildContent(build.raw_markdown)),
+    fetchSimilarBuilds(build),
+  ])
   const renderedHTML = addLinks(marked.parse(buildContent) as string)
 
   const formattedDate = new Date(build.created_at).toLocaleDateString('en-US', {
@@ -248,7 +284,7 @@ export default async function BuildPage({
                 Compare
               </Link>
             </div>
-            <ShareButtons buildId={build.id} buildTitle={build.title} buildOwnerId={build.user_id} />
+            <ShareButtons buildId={build.id} buildTitle={build.title} buildOwnerId={build.user_id} buildBudget={build.budget} />
           </div>
 
           {/* ── Build content (full AI response) ── */}
@@ -258,6 +294,27 @@ export default async function BuildPage({
               dangerouslySetInnerHTML={{ __html: renderedHTML }}
             />
           </div>
+
+          {/* ── Similar Builds ── */}
+          {similarBuilds.length > 0 && (
+            <div className="similar-builds-section">
+              <div className="similar-builds-label">SIMILAR BUILDS</div>
+              <div className="similar-builds-grid">
+                {similarBuilds.map(s => (
+                  <Link key={s.id} href={`/build/${s.id}`} className="similar-build-card">
+                    <span className="similar-build-title">{s.title}</span>
+                    <div className="similar-build-meta">
+                      {s.budget && <span className="build-budget-badge" style={{ fontSize: 9 }}>{s.budget}</span>}
+                      <span className="similar-build-score">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 8H4l8-8z"/></svg>
+                        {s.vote_score}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Comments ── */}
           <Comments buildId={build.id} />

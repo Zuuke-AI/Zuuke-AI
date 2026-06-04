@@ -1058,7 +1058,7 @@ function ChatApp() {
                       {[
                         { icon: '🎮', title: 'FPS Gaming Build', text: '$1,200 · 1080p · max competitive FPS', prompt: 'Build me a gaming PC for $1,200. I play competitive FPS games (CS2, Valorant) at 1080p and want the highest possible FPS. Prioritise max frames over everything else.' },
                         { icon: '🎬', title: 'Video Editing Rig', text: '$2,000 · 4K Premiere & DaVinci', prompt: 'I need a PC for 4K video editing in Premiere Pro and DaVinci Resolve. Budget is $2,000. Fast export times and smooth 4K playback are the priority.' },
-                        { icon: '⚡', title: 'Budget Build', text: 'Under $600 · best value gaming', prompt: 'Build me the best gaming PC possible for under $600. I want to play Fortnite, Minecraft, and some AAA games. Squeeze every bit of performance out of that budget.' },
+                        { icon: '🔥', title: 'Roast My Build', text: 'Paste a build — I\'ll tell you what\'s wrong', prompt: 'I want you to roast and critique a PC build for me. I\'ll paste the parts list and you tell me: what\'s wrong, what\'s overpriced, what\'s bottlenecking, and what you\'d change. Go.' },
                         { icon: '🔧', title: 'Upgrade Advisor', text: 'Tell me your specs — I\'ll find the bottleneck', prompt: 'I want upgrade advice for my current PC. What details do you need from me?' },
                       ].map((s) => (
                         <div key={s.title} className="sug-card" onClick={() => sendMessage(s.prompt)}>

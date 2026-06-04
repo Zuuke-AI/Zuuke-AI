@@ -8,10 +8,12 @@ interface ShareButtonsProps {
   buildId: string
   buildTitle: string
   buildOwnerId: string | null
+  buildBudget?: string | null
 }
 
-export default function ShareButtons({ buildId, buildTitle, buildOwnerId }: ShareButtonsProps) {
+export default function ShareButtons({ buildId, buildTitle, buildOwnerId, buildBudget }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false)
+  const [redditCopied, setRedditCopied] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [isPublic, setIsPublic] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -152,6 +154,17 @@ export default function ShareButtons({ buildId, buildTitle, buildOwnerId }: Shar
   const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(`Check out this PC build I generated with Zuuke AI: ${buildTitle}`)}&url=${encodeURIComponent(buildUrl)}`
   const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(buildUrl)}&title=${encodeURIComponent(buildTitle + ' — AI PC Build by Zuuke')}`
 
+  async function copyRedditFormat() {
+    const budget = buildBudget ? ` ${buildBudget}` : ''
+    const text = `**[Build]${budget} ${buildTitle}**\n\nGenerated with Zuuke AI — full parts list, compatibility verified, AI reasoning for every component.\n\n🔗 View the full build: ${buildUrl}`
+    try {
+      await navigator.clipboard.writeText(text)
+      setRedditCopied(true)
+      setTimeout(() => setRedditCopied(false), 2500)
+      trackEvent('build_shared', { buildId, source: 'reddit_copy' })
+    } catch { /* noop */ }
+  }
+
   return (
     <>
       {/* ── Post to Community (owner only) ── */}
@@ -208,6 +221,13 @@ export default function ShareButtons({ buildId, buildTitle, buildOwnerId }: Shar
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8c-.6 0-1 .4-1 1s.4 1 1 1 1-.4 1-1-.4-1-1-1z" fill="white"/><path d="M20 12c0-1.1-.9-2-2-2-.5 0-1 .2-1.4.5C15.3 9.6 13.7 9 12 9s-3.3.6-4.6 1.5c-.4-.3-.9-.5-1.4-.5-1.1 0-2 .9-2 2 0 .8.5 1.5 1.2 1.8-.1.4-.2.8-.2 1.2 0 3.3 3.6 6 8 6s8-2.7 8-6c0-.4-.1-.8-.2-1.2.7-.3 1.2-1 1.2-1.8z" fill="white"/></svg>
             Reddit
           </a>
+          <button className={`build-social-btn${redditCopied ? ' copied' : ''}`} onClick={copyRedditFormat}>
+            {redditCopied ? (
+              <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Copied!</>
+            ) : (
+              <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Reddit Post</>
+            )}
+          </button>
         </div>
       </div>
 

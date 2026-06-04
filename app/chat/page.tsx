@@ -193,6 +193,8 @@ function ChatApp() {
   const [thumbs, setThumbs] = useState<Record<string, 'up' | 'down'>>({})
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
+  const [showSaveBanner, setShowSaveBanner] = useState(false)
+  const [saveBannerBuildId, setSaveBannerBuildId] = useState<string | null>(null)
 
   const [userId, setUserId] = useState<string | null>(null)
   const [profileUsername, setProfileUsername] = useState<string | null>(null)
@@ -406,6 +408,11 @@ function ChatApp() {
         return updated
       })
       trackEvent('build_generated', { buildId: id, userId: userId ?? undefined })
+      // Show save banner to guests so they know they can keep this build
+      if (isGuest && !showSaveBanner) {
+        setSaveBannerBuildId(id)
+        setShowSaveBanner(true)
+      }
     } catch { /* noop — build save is best-effort */ }
   }
 
@@ -1022,7 +1029,7 @@ function ChatApp() {
                     </p>
                     {isGuest && (
                       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--mist)', marginBottom: 24, textTransform: 'uppercase' }}>
-                        {GUEST_LIMIT} free messages · No account needed
+                        {guestRemaining} guest message{guestRemaining !== 1 ? 's' : ''} left · <span style={{ color: 'var(--cyan)', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setShowSignInModal(true)}>Free account = 10/day</span>
                       </p>
                     )}
                     <div className="suggestions">
@@ -1107,6 +1114,24 @@ function ChatApp() {
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
+
+        {/* Save-build banner for guests (fires after first build is generated) */}
+        {showSaveBanner && isGuest && (
+          <div className="save-banner">
+            <div className="save-banner-left">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <span>Your build was generated! <strong>Create a free account</strong> to save it to your profile &amp; share with the community.</span>
+            </div>
+            <div className="save-banner-right">
+              <Link href={`/auth?mode=signup&next=/build/${saveBannerBuildId ?? ''}`} className="save-banner-btn">
+                Save My Build →
+              </Link>
+              <button className="save-banner-dismiss" onClick={() => setShowSaveBanner(false)} aria-label="Dismiss">✕</button>
+            </div>
+          </div>
+        )}
 
         {/* Input area */}
         <div className="input-container">

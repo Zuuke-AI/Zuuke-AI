@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase'
 import SiteNav from '@/components/SiteNav'
 import BgCanvas from '@/components/BgCanvas'
 import BuildCard from './BuildCard'
+import JoinBanner from './JoinBanner'
 
 export const metadata: Metadata = {
   title: 'Community Builds · Zuuke',
@@ -165,6 +166,9 @@ export default async function CommunityPage({
               </Link>
             ))}
           </div>
+
+          {/* Guest join nudge */}
+          <JoinBanner />
 
           {/* Feed */}
           {builds.length === 0 ? (

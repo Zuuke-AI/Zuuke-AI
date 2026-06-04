@@ -320,7 +320,7 @@ export default function LandingPage() {
               </svg>
               {canBuild ? 'Generate My Build →' : 'Build My PC →'}
             </button>
-            <span className="builder-cta-note">Free · No account needed · Results in seconds</span>
+            <span className="builder-cta-note">Free · No credit card · Results in seconds</span>
           </div>
         </div>
       </section>
@@ -592,7 +592,7 @@ export default function LandingPage() {
           STOP RESEARCHING.<br />
           <span className="accent">START BUILDING.</span>
         </div>
-        <p>Thousands of hours of PC building expertise distilled into 30 seconds. Free to use. No account required.</p>
+        <p>Thousands of hours of PC building expertise distilled into 30 seconds. Free to try — create an account to save and share your builds.</p>
         <Link href="/chat" className="btn-primary" style={{ fontSize: 15, padding: '18px 52px' }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />

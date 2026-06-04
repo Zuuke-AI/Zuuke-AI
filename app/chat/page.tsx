@@ -192,6 +192,7 @@ function ChatApp() {
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
   const [showSaveBanner, setShowSaveBanner] = useState(false)
   const [saveBannerBuildId, setSaveBannerBuildId] = useState<string | null>(null)
+  const [confirmDeleteChatId, setConfirmDeleteChatId] = useState<string | null>(null)
 
   const [userId, setUserId] = useState<string | null>(null)
   const [profileUsername, setProfileUsername] = useState<string | null>(null)
@@ -434,17 +435,29 @@ function ChatApp() {
   function selectChat(id: string) {
     if (isStreaming) stopStream()
     setCurrentChatId(id)
+    setConfirmDeleteChatId(null)
     if (window.innerWidth <= 768) setSidebarOpen(false)
   }
 
-  function deleteChat(e: React.MouseEvent, id: string) {
+  function requestDeleteChat(e: React.MouseEvent, id: string) {
     e.stopPropagation()
+    if (chats.length === 1) return
+    setConfirmDeleteChatId(id)
+  }
+
+  function confirmDeleteChat(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    setConfirmDeleteChatId(null)
     if (chats.length === 1) return
     const updated = chats.filter((c) => c.id !== id)
     updateChats(updated)
     if (currentChatId === id) setCurrentChatId(updated[0].id)
-    // Delete from cloud if logged in
     if (userId) deleteChatFromCloud(id)
+  }
+
+  function cancelDeleteChat(e: React.MouseEvent) {
+    e.stopPropagation()
+    setConfirmDeleteChatId(null)
   }
 
   function stopStream() {
@@ -854,12 +867,22 @@ function ChatApp() {
                   {list.map((c) => (
                     <div
                       key={c.id}
-                      className={`chat-item${c.id === currentChatId ? ' active' : ''}`}
-                      onClick={() => selectChat(c.id)}
+                      className={`chat-item${c.id === currentChatId ? ' active' : ''}${confirmDeleteChatId === c.id ? ' confirming' : ''}`}
+                      onClick={() => confirmDeleteChatId === c.id ? null : selectChat(c.id)}
                     >
-                      {c.title}
-                      {chats.length > 1 && (
-                        <button className="delete-btn" onClick={(e) => deleteChat(e, c.id)}>✕</button>
+                      {confirmDeleteChatId === c.id ? (
+                        <div className="chat-item-confirm-delete" onClick={e => e.stopPropagation()}>
+                          <span className="chat-item-confirm-label">Delete?</span>
+                          <button className="chat-item-confirm-yes" onClick={(e) => confirmDeleteChat(e, c.id)}>Yes</button>
+                          <button className="chat-item-confirm-no" onClick={cancelDeleteChat}>No</button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="chat-item-title">{c.title}</span>
+                          {chats.length > 1 && (
+                            <button className="delete-btn" onClick={(e) => requestDeleteChat(e, c.id)}>✕</button>
+                          )}
+                        </>
                       )}
                     </div>
                   ))}

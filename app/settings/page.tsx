@@ -259,9 +259,11 @@ function SettingsContent() {
 
   async function copyReferralLink() {
     const link = `https://zuuke.shop/auth?ref=${referralCode}`
-    await navigator.clipboard.writeText(link).catch(() => {})
-    setReferralCopied(true)
-    setTimeout(() => setReferralCopied(false), 2500)
+    try {
+      await navigator.clipboard.writeText(link)
+      setReferralCopied(true)
+      setTimeout(() => setReferralCopied(false), 2500)
+    } catch { /* clipboard unavailable — button stays at default label */ }
   }
 
   // ── Change email ───────────────────────────────────────────────────────────

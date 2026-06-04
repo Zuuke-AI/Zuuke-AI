@@ -17,9 +17,9 @@ export async function GET(request: Request) {
 
   const supabase = createServerClient()
 
-  // Find builds created 29-31 days ago (catch the ~30 day window)
+  // Find builds created exactly 30-31 days ago (strict 1-day window prevents double-sending)
   const from = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString()
-  const to   = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString()
+  const to   = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   const { data: builds, error } = await supabase
     .from('builds')

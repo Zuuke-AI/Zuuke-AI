@@ -1311,14 +1311,13 @@ function MessageRow({
           </div>
           <div className="msg-text" dangerouslySetInnerHTML={{ __html: renderedHTML }} />
 
-          {/* Share panel — appears when AI response is auto-saved as a public build */}
+          {/* Save bar — appears when AI response is auto-saved */}
           {!m.streaming && m.role === 'assistant' && m.buildId && (
             <div className="chat-build-share">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--cyan)', flexShrink: 0 }}>
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
               </svg>
-              <span className="chat-build-share-url">zuuke.shop/build/{m.buildId}</span>
+              <span className="chat-build-share-url">Build saved</span>
               <button
                 className={`chat-build-share-btn${shareLinkCopied ? ' copied' : ''}`}
                 onClick={handleCopyBuildLink}
@@ -1336,6 +1335,9 @@ function MessageRow({
               >
                 View →
               </a>
+              <Link href="/builds" className="chat-build-share-btn" style={{ textDecoration: 'none' }}>
+                My Builds
+              </Link>
             </div>
           )}
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
+import { extractBuildContent } from '@/lib/build-utils'
 import SiteNav from '@/components/SiteNav'
 import BgCanvas from '@/components/BgCanvas'
 import CompareSearch from './CompareSearch'
@@ -176,7 +177,7 @@ export default async function ComparePage({
 
                       {/* Extracted sections */}
                       <div className="compare-sections">
-                        {extractBulletSections(build.raw_markdown).map(section => (
+                        {extractBulletSections(extractBuildContent(build.raw_markdown)).map(section => (
                           <div key={section.heading} className="compare-section">
                             <div className="compare-section-heading">{section.heading}</div>
                             <ul className="compare-section-list">

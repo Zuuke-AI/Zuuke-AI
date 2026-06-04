@@ -38,6 +38,35 @@ export function parseBuildTitle(markdown: string): string {
   return 'Custom PC Build'
 }
 
+/**
+ * Strips conversational wrapper from a raw AI response, leaving only the
+ * structured build content (heading → parts table → sections).
+ *
+ * Removes:
+ *   - Intro text before the first ## heading ("Sure! Here's your build...")
+ *   - Closing sign-off after the last section ("Want me to swap any part?")
+ *
+ * Safe for old-format builds too — returns content unchanged if no heading found.
+ */
+export function extractBuildContent(markdown: string): string {
+  let content = markdown.trim()
+
+  // 1. Strip conversational intro before the first heading
+  const firstHeading = content.match(/^#{1,3}\s+.+/m)
+  if (firstHeading && (firstHeading.index ?? 0) > 5) {
+    content = content.slice(firstHeading.index!)
+  }
+
+  // 2. Strip trailing sign-off
+  //    Handles new format:  \n---\n*Want me to adjust...*
+  //    Handles older format: \n\nWant me to swap..., Let me know if..., etc.
+  content = content
+    .replace(/\n+---\n\*[^\n]+\*\s*$/, '')
+    .replace(/\n+\*?(?:[Ww]ant me to|[Ll]et me know|[Ff]eel free|[Ss]hall I|[Ww]ould you like)[^\n]*\*?\s*$/, '')
+
+  return content.trim()
+}
+
 /** Extract the estimated total cost from the AI response */
 export function parseBudget(markdown: string): string | null {
   // "Total: ~$1,200" / "Estimated Total: $1,400" / "**Total Cost: ~$950**"

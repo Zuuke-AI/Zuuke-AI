@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { marked } from 'marked'
 import { createServerClient } from '@/lib/supabase'
+import { extractBuildContent } from '@/lib/build-utils'
 import SiteNav from '@/components/SiteNav'
 import BgCanvas from '@/components/BgCanvas'
 import ShareButtons from './ShareButtons'
@@ -22,15 +23,12 @@ function makeLink(name: string): string {
   const bh      = `https://www.bhphotovideo.com/c/search?q=${q}`
   return (
     `<span class="product-wrap">` +
-      `<a class="product-amz" href="${amazon}" target="_blank" rel="noopener sponsored">${name}</a>` +
-      `<span class="product-compare-wrap">` +
-        `<button class="product-compare-btn" onclick="this.nextElementSibling.classList.toggle('open')">compare ▾</button>` +
-        `<span class="product-compare-menu">` +
-          `<a href="${amazon}"  target="_blank" rel="noopener sponsored">🛒 Amazon</a>` +
-          `<a href="${newegg}"  target="_blank" rel="noopener noreferrer">🔵 Newegg</a>` +
-          `<a href="${bestbuy}" target="_blank" rel="noopener noreferrer">🟡 Best Buy</a>` +
-          `<a href="${bh}"      target="_blank" rel="noopener noreferrer">⚫ B&H Photo</a>` +
-        `</span>` +
+      `<strong class="product-name">${name}</strong>` +
+      `<span class="product-links">` +
+        `<a href="${amazon}"  target="_blank" rel="noopener sponsored"  class="plink plink-amz">Amazon</a>` +
+        `<a href="${newegg}"  target="_blank" rel="noopener noreferrer" class="plink plink-new">Newegg</a>` +
+        `<a href="${bestbuy}" target="_blank" rel="noopener noreferrer" class="plink plink-bb">Best Buy</a>` +
+        `<a href="${bh}"      target="_blank" rel="noopener noreferrer" class="plink plink-bh">B&H</a>` +
       `</span>` +
     `</span>`
   )
@@ -175,7 +173,8 @@ export default async function BuildPage({
 
   if (!build) notFound()
 
-  const renderedHTML = addLinks(marked.parse(build.raw_markdown) as string)
+  const buildContent = extractBuildContent(build.raw_markdown)
+  const renderedHTML = addLinks(marked.parse(buildContent) as string)
 
   const formattedDate = new Date(build.created_at).toLocaleDateString('en-US', {
     year: 'numeric',

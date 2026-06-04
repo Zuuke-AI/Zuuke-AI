@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       try {
         const anthropicStream = getAnthropicClient().messages.stream({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
+          max_tokens: 4096,
           system: [{ type: 'text', text: getSystemPrompt(), cache_control: { type: 'ephemeral' } }],
           messages: messages.map((m: { role: string; content: string }) => ({
             role: m.role as 'user' | 'assistant',

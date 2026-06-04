@@ -435,16 +435,16 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 .msg-text a { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(0,212,255,0.35); }
 
 /* ── Product compare widget ─────────────────────────────────────── */
-.product-wrap { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
-.product-amz { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(0,212,255,0.35); font-weight: 600; }
-.product-amz:hover { color: #fff; }
-.product-compare-wrap { position: relative; display: inline-flex; }
-.product-compare-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25); color: var(--cyan); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; padding: 1px 6px; cursor: pointer; border-radius: 3px; line-height: 1.6; transition: background 0.15s; }
-.product-compare-btn:hover { background: rgba(0,212,255,0.2); }
-.product-compare-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 100; background: var(--dark-2); border: 1px solid var(--border-2); min-width: 150px; padding: 6px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-.product-compare-menu.open { display: flex; flex-direction: column; }
-.product-compare-menu a { display: block; padding: 7px 14px; font-size: 12px; color: var(--mist-2); text-decoration: none; white-space: nowrap; transition: background 0.1s, color 0.1s; }
-.product-compare-menu a:hover { background: rgba(0,212,255,0.08); color: var(--white); }
+/* ── Product wrap — inline part name + seller pill links ── */
+.product-wrap { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; vertical-align: middle; }
+.product-name { color: var(--white); font-weight: 700; }
+.product-links { display: inline-flex; align-items: center; gap: 3px; flex-wrap: nowrap; }
+.plink { display: inline-block; padding: 1px 7px; font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; border-radius: 3px; line-height: 1.7; transition: opacity 0.15s, background 0.15s; white-space: nowrap; }
+.plink:hover { opacity: 0.85; }
+.plink-amz { background: #ff9900; color: #111; }
+.plink-new { background: #1a6bc1; color: #fff; }
+.plink-bb  { background: #003399; color: #fff; }
+.plink-bh  { background: #2a2a2a; color: #ccc; border: 1px solid #444; }
 .msg-text blockquote { border-left: 2px solid var(--cyan); margin: 0.8em 0; padding: 4px 0 4px 16px; color: var(--mist); font-style: italic; }
 .msg-text table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 13px; }
 .msg-text th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--cyan); font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); font-weight: 400; }
@@ -1136,12 +1136,9 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
   .msg-badge { font-size: 7px; padding: 2px 6px; }
   .msg-time { font-size: 9px; }
 
-  /* Product compare dropdown — pin above keyboard on mobile */
-  .product-compare-menu {
-    position: fixed;
-    left: 12px; right: 12px; bottom: 80px; top: auto;
-    min-width: unset; width: auto; border-radius: 4px;
-  }
+  /* Product pill links — wrap gracefully on small screens */
+  .product-links { flex-wrap: wrap; }
+  .plink { font-size: 8px; padding: 1px 5px; }
 
   /* Input area */
   .input-container { padding: 10px 12px 14px; }

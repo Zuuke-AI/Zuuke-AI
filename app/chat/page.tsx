@@ -46,15 +46,12 @@ function makeLink(name: string): string {
   const bh      = `https://www.bhphotovideo.com/c/search?q=${q}`
   return (
     `<span class="product-wrap">` +
-      `<a class="product-amz" href="${amazon}" target="_blank" rel="noopener sponsored">${name}</a>` +
-      `<span class="product-compare-wrap">` +
-        `<button class="product-compare-btn" onclick="this.nextElementSibling.classList.toggle('open')">compare ▾</button>` +
-        `<span class="product-compare-menu">` +
-          `<a href="${amazon}"  target="_blank" rel="noopener sponsored">🛒 Amazon</a>` +
-          `<a href="${newegg}"  target="_blank" rel="noopener noreferrer">🔵 Newegg</a>` +
-          `<a href="${bestbuy}" target="_blank" rel="noopener noreferrer">🟡 Best Buy</a>` +
-          `<a href="${bh}"      target="_blank" rel="noopener noreferrer">⚫ B&H Photo</a>` +
-        `</span>` +
+      `<strong class="product-name">${name}</strong>` +
+      `<span class="product-links">` +
+        `<a href="${amazon}"  target="_blank" rel="noopener sponsored"    class="plink plink-amz">Amazon</a>` +
+        `<a href="${newegg}"  target="_blank" rel="noopener noreferrer"   class="plink plink-new">Newegg</a>` +
+        `<a href="${bestbuy}" target="_blank" rel="noopener noreferrer"   class="plink plink-bb">Best Buy</a>` +
+        `<a href="${bh}"      target="_blank" rel="noopener noreferrer"   class="plink plink-bh">B&H</a>` +
       `</span>` +
     `</span>`
   )
@@ -1034,10 +1031,10 @@ function ChatApp() {
                     )}
                     <div className="suggestions">
                       {[
-                        { icon: '🎮', title: 'FPS Gaming Build', text: '$1,200 · 1080p high FPS', prompt: 'Build me a gaming PC for $1,200. I play FPS games at 1080p and want the highest possible FPS.' },
-                        { icon: '🎬', title: 'Video Editing Rig', text: '$2,000 · 4K editing powerhouse', prompt: 'I need a PC for 4K video editing in Premiere Pro and DaVinci Resolve. Budget is $2,000.' },
-                        { icon: '⚡', title: 'Budget Starter', text: 'Under $600 · entry-level gaming', prompt: 'Build me a budget gaming PC for under $600. I want to play Fortnite and Minecraft.' },
-                        { icon: '🔧', title: 'Upgrade Advisor', text: 'Analyze your current rig', prompt: 'I have an i7-9700K and RTX 2070. What should I upgrade first to improve gaming performance?' },
+                        { icon: '🎮', title: 'FPS Gaming Build', text: '$1,200 · 1080p · max competitive FPS', prompt: 'Build me a gaming PC for $1,200. I play competitive FPS games (CS2, Valorant) at 1080p and want the highest possible FPS. Prioritise max frames over everything else.' },
+                        { icon: '🎬', title: 'Video Editing Rig', text: '$2,000 · 4K Premiere & DaVinci', prompt: 'I need a PC for 4K video editing in Premiere Pro and DaVinci Resolve. Budget is $2,000. Fast export times and smooth 4K playback are the priority.' },
+                        { icon: '⚡', title: 'Budget Build', text: 'Under $600 · best value gaming', prompt: 'Build me the best gaming PC possible for under $600. I want to play Fortnite, Minecraft, and some AAA games. Squeeze every bit of performance out of that budget.' },
+                        { icon: '🔧', title: 'Upgrade Advisor', text: 'Tell me your specs — I\'ll find the bottleneck', prompt: 'I want upgrade advice for my current PC. What details do you need from me?' },
                       ].map((s) => (
                         <div key={s.title} className="sug-card" onClick={() => sendMessage(s.prompt)}>
                           <span className="sug-icon">{s.icon}</span>

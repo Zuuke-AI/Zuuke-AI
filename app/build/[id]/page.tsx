@@ -37,6 +37,8 @@ function makeLink(name: string): string {
 function addLinks(html: string): string {
   let r = html.replace(/\[\[([^\]]+)\]\]/g, (_m, name) => makeLink(name))
   const linked = new Set<string>()
+  // Track products already wrapped via [[brackets]] → <strong class="product-name">
+  r.replace(/class="product-name">([^<]+)<\/strong>/gi, (_m, text) => { linked.add(text.toLowerCase()); return _m })
   r.replace(/<a [^>]*>([^<]+)<\/a>/gi, (_m, text) => { linked.add(text.toLowerCase()); return _m })
   const wrap = (re: RegExp) => {
     r = r.replace(re, (m) => linked.has(m.toLowerCase()) ? m : makeLink(m))

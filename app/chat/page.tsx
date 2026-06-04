@@ -61,14 +61,16 @@ function addLinks(html: string): string {
   // 1. [[Product Name]] markers from the AI — highest priority, most reliable
   let r = html.replace(/\[\[([^\]]+)\]\]/g, (_match, name) => makeLink(name))
 
-  // Already inside an <a> tag — skip re-linking
+  // Track everything already wrapped so regexes don't double-link
   const linked = new Set<string>()
+  // Products wrapped via [[brackets]] → now inside <strong class="product-name">
+  r.replace(/class="product-name">([^<]+)<\/strong>/gi, (_m, text) => { linked.add(text.toLowerCase()); return _m })
+  // Any bare <a> tags
   r.replace(/<a [^>]*>([^<]+)<\/a>/gi, (_m, text) => { linked.add(text.toLowerCase()); return _m })
 
   const wrap = (re: RegExp) => {
     r = r.replace(re, (m) => {
       if (linked.has(m.toLowerCase())) return m
-      // Don't double-wrap inside existing <a> tags
       return makeLink(m)
     })
   }

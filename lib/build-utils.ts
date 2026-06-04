@@ -39,14 +39,17 @@ export function parseBuildTitle(markdown: string): string {
 }
 
 /**
- * Strips conversational wrapper from a raw AI response, leaving only the
- * structured build content (heading → parts table → sections).
+ * Extracts ONLY the parts list section from a raw AI response for public display.
  *
- * Removes:
- *   - Intro text before the first ## heading ("Sure! Here's your build...")
- *   - Closing sign-off after the last section ("Want me to swap any part?")
+ * The full AI response has: intro → parts table → reasoning sections → sign-off.
+ * Shared builds should show ONLY the parts table (heading + table + estimated total).
+ * Reasoning, bottleneck analysis, upgrade path etc. are for the chat only.
  *
- * Safe for old-format builds too — returns content unchanged if no heading found.
+ * Strategy:
+ *   1. Strip any conversational intro before the first heading
+ *   2. Cut at the first --- separator (marks end of parts table in new format)
+ *   3. For old-format builds without ---, cut at the first analysis section heading
+ *   4. Fall back to stripping just the closing sign-off if no cut point found
  */
 export function extractBuildContent(markdown: string): string {
   let content = markdown.trim()
@@ -57,9 +60,22 @@ export function extractBuildContent(markdown: string): string {
     content = content.slice(firstHeading.index!)
   }
 
-  // 2. Strip trailing sign-off
-  //    Handles new format:  \n---\n*Want me to adjust...*
-  //    Handles older format: \n\nWant me to swap..., Let me know if..., etc.
+  // 2. Cut at first --- separator — everything after is reasoning/analysis
+  const hrIndex = content.indexOf('\n---')
+  if (hrIndex > 80) {
+    return content.slice(0, hrIndex).trim()
+  }
+
+  // 3. For older builds: cut before analysis sections
+  //    (Bottleneck, Why These Parts, Gotchas, Upgrade Path, Reasoning, etc.)
+  const analysisCut = content.search(
+    /\n###?\s+(?:⚡|🧠|⚠|🔮|Bottleneck|Why These|Reasoning|Upgrade|Gotcha|Note)/
+  )
+  if (analysisCut > 80) {
+    return content.slice(0, analysisCut).trim()
+  }
+
+  // 4. Last resort: strip closing sign-off only
   content = content
     .replace(/\n+---\n\*[^\n]+\*\s*$/, '')
     .replace(/\n+\*?(?:[Ww]ant me to|[Ll]et me know|[Ff]eel free|[Ss]hall I|[Ww]ould you like)[^\n]*\*?\s*$/, '')

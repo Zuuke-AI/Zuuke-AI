@@ -230,7 +230,7 @@ function AuthForm() {
       return
     }
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/auth/callback?type=recovery',
+      redirectTo: window.location.origin + '/auth/reset',
     })
     setAlert({ msg: 'Password reset email sent! Check your inbox.', type: 'success' })
   }

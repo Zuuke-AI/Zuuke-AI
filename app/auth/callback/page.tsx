@@ -51,29 +51,50 @@ function CallbackHandler() {
       }
 
       if (!profile?.username) {
-        // ── New OAuth user ──────────────────────────────────────────────────
+        // ── New user (email signup or OAuth) ────────────────────────────────
+        // Check for pending profile data stored during signup when the
+        // upsert failed because the session wasn't established yet.
+        let pendingProfile: { username?: string; first_name?: string; ref?: string | null } = {}
+        try {
+          const raw = localStorage.getItem('pending_profile')
+          if (raw) {
+            pendingProfile = JSON.parse(raw)
+            localStorage.removeItem('pending_profile')
+          }
+        } catch { /* ignore */ }
+
         const meta = session.user.user_metadata ?? {}
-        const rawName =
-          meta.full_name ?? meta.name ?? meta.given_name ?? meta.preferred_username ?? 'user'
-        const base = String(rawName).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 18) || 'user'
-        const suffix = Math.random().toString(36).slice(2, 6)
-        const autoUsername = base + suffix
+
+        let username = pendingProfile.username ?? ''
+        if (!username) {
+          const rawName =
+            meta.full_name ?? meta.name ?? meta.given_name ?? meta.preferred_username ?? 'user'
+          const base = String(rawName).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 18) || 'user'
+          const suffix = Math.random().toString(36).slice(2, 6)
+          username = base + suffix
+        }
 
         await supabase.from('profiles').upsert(
           {
             id: session.user.id,
-            username: autoUsername,
+            username,
+            first_name: pendingProfile.first_name || meta.first_name || meta.full_name?.split(' ')[0] || '',
             subscription_status: 'free',
             message_count_today: 0,
+            ...(pendingProfile.ref ? { referred_by: pendingProfile.ref } : {}),
           },
           { onConflict: 'id' }
         )
 
-        // Send welcome email to new OAuth user
         sendWelcome()
 
-        // Send them to settings so they can customise the auto-assigned username
-        router.replace('/settings?welcome=1')
+        // Only push to settings if it was an OAuth user with no prior profile
+        // (email signup users already chose their username — go straight to chat)
+        if (!pendingProfile.username) {
+          router.replace('/settings?welcome=1')
+          return
+        }
+        router.replace('/chat')
         return
       }
 

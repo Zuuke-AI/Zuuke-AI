@@ -104,16 +104,19 @@ function AuthForm() {
 
     setLoading(true)
     try {
+      const refCode = searchParams.get('ref')?.toUpperCase() ?? null
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
-        options: { data: { first_name: firstName.trim(), last_name: lastName.trim() } },
+        options: {
+          data: { first_name: firstName.trim(), last_name: lastName.trim() },
+          emailRedirectTo: window.location.origin + '/auth/callback',
+        },
       })
       if (error) throw error
 
       if (data.user) {
-        const refCode = searchParams.get('ref')?.toUpperCase() ?? null
-        await supabase.from('profiles').upsert(
+        const { error: profileError } = await supabase.from('profiles').upsert(
           {
             id: data.user.id,
             username: uClean,
@@ -124,6 +127,15 @@ function AuthForm() {
           },
           { onConflict: 'id', ignoreDuplicates: false }
         )
+        if (profileError) {
+          // Profile creation failed (likely RLS with unconfirmed session).
+          // Store intent in localStorage so the callback can finish setup.
+          localStorage.setItem('pending_profile', JSON.stringify({
+            username: uClean,
+            first_name: firstName.trim(),
+            ref: refCode,
+          }))
+        }
       }
 
       setShowSuccess(true)

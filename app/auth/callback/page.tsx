@@ -19,6 +19,8 @@ function CallbackHandler() {
         return
       }
 
+      const type = searchParams.get('type')
+
       // PKCE flow — exchange the code for a session
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
@@ -26,6 +28,12 @@ function CallbackHandler() {
           router.replace('/auth?error=oauth_failed')
           return
         }
+      }
+
+      // Password recovery flow — send user to the reset form
+      if (type === 'recovery') {
+        router.replace('/auth?mode=reset')
+        return
       }
 
       const { data: { session } } = await supabase.auth.getSession()

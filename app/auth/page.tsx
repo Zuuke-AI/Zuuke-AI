@@ -13,8 +13,10 @@ function AuthForm() {
   const searchParams = useSearchParams()
   const supabase = createBrowserClient()
 
-  const [mode, setMode] = useState<'signup' | 'login'>(
-    searchParams.get('mode') === 'login' ? 'login' : 'signup'
+  const [mode, setMode] = useState<'signup' | 'login' | 'reset'>(
+    searchParams.get('mode') === 'login' ? 'login'
+    : searchParams.get('mode') === 'reset' ? 'reset'
+    : 'signup'
   )
   const [loading, setLoading] = useState(false)
   const [alert, setAlert] = useState<{ msg: string; type: 'error' | 'success' } | null>(null)
@@ -33,6 +35,12 @@ function AuthForm() {
   const [loginIdentifier, setLoginIdentifier] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
 
+  // Reset password fields
+  const [resetPassword, setResetPassword] = useState('')
+  const [resetConfirm, setResetConfirm] = useState('')
+  const [showResetPwd, setShowResetPwd] = useState(false)
+  const [resetDone, setResetDone] = useState(false)
+
   // Username availability
   type AvailStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
   const [availStatus, setAvailStatus] = useState<AvailStatus>('idle')
@@ -42,12 +50,13 @@ function AuthForm() {
   const [errors, setErrors] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
+    if (mode === 'reset') return // stay on page so user can set their new password
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.push('/')
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const switchMode = (m: 'signup' | 'login') => {
+  const switchMode = (m: 'signup' | 'login' | 'reset') => {
     setMode(m)
     setAlert(null)
     setErrors({})
@@ -189,6 +198,27 @@ function AuthForm() {
     }
   }
 
+  // ── Reset password (after clicking email link) ────────────────────────────
+
+  const handleReset = async () => {
+    const errs: Record<string, boolean> = {}
+    if (resetPassword.length < 8) errs.resetPassword = true
+    if (resetPassword !== resetConfirm) errs.resetConfirm = true
+    setErrors(errs)
+    if (Object.keys(errs).length) return
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: resetPassword })
+      if (error) throw error
+      setResetDone(true)
+    } catch (err) {
+      setAlert({ msg: (err as Error).message || 'Something went wrong.', type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // ── Forgot password ───────────────────────────────────────────────────────
 
   const handleForgot = async (e: React.MouseEvent) => {
@@ -200,7 +230,7 @@ function AuthForm() {
       return
     }
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/auth?mode=login',
+      redirectTo: window.location.origin + '/auth/callback?type=recovery',
     })
     setAlert({ msg: 'Password reset email sent! Check your inbox.', type: 'success' })
   }
@@ -429,6 +459,72 @@ function AuthForm() {
                 Don&apos;t have an account?{' '}
                 <a href="#" onClick={(e) => { e.preventDefault(); switchMode('signup') }}>Sign up free</a>
               </div>
+            </div>
+          )}
+
+          {/* ── RESET PASSWORD ── */}
+          {mode === 'reset' && !resetDone && (
+            <div>
+              <div className="auth-heading">SET NEW PASSWORD</div>
+              <div className="auth-subheading">// Choose a new password for your account</div>
+
+              <div className="form-group">
+                <label className="form-label">New Password</label>
+                <div className="input-wrap">
+                  <input
+                    className={`form-input${errors.resetPassword ? ' error' : ''}`}
+                    type={showResetPwd ? 'text' : 'password'}
+                    placeholder="Min. 8 characters"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <button className="pwd-toggle" type="button" onClick={() => setShowResetPwd(!showResetPwd)} tabIndex={-1}>
+                    {showResetPwd
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    }
+                  </button>
+                </div>
+                {errors.resetPassword && <div className="form-error show">Password must be at least 8 characters</div>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Confirm Password</label>
+                <input
+                  className={`form-input${errors.resetConfirm ? ' error' : ''}`}
+                  type={showResetPwd ? 'text' : 'password'}
+                  placeholder="Repeat your new password"
+                  value={resetConfirm}
+                  onChange={(e) => setResetConfirm(e.target.value)}
+                  autoComplete="new-password"
+                />
+                {errors.resetConfirm && <div className="form-error show">Passwords do not match</div>}
+              </div>
+
+              <button
+                className={`submit-btn${loading ? ' loading' : ''}`}
+                onClick={handleReset}
+                disabled={loading}
+              >
+                <span className="btn-text">Update Password →</span>
+                <div className="btn-spinner" />
+              </button>
+            </div>
+          )}
+
+          {mode === 'reset' && resetDone && (
+            <div className="success-state">
+              <div className="success-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div className="success-title">PASSWORD UPDATED</div>
+              <div className="success-text">
+                Your password has been changed successfully.
+              </div>
+              <button className="submit-btn" style={{ marginTop: 24 }} onClick={() => switchMode('login')}>
+                <span className="btn-text">Sign In →</span>
+              </button>
             </div>
           )}
         </div>

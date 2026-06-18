@@ -13,7 +13,7 @@ function AuthForm() {
   const searchParams = useSearchParams()
   const supabase = createBrowserClient()
 
-  const [mode, setMode] = useState<'signup' | 'login' | 'reset'>(
+  const [mode, setMode] = useState<'signup' | 'login' | 'forgot' | 'reset'>(
     searchParams.get('mode') === 'login' ? 'login'
     : searchParams.get('mode') === 'reset' ? 'reset'
     : 'signup'
@@ -34,6 +34,10 @@ function AuthForm() {
   // Login fields — email OR username
   const [loginIdentifier, setLoginIdentifier] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
+
+  // Forgot password fields
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotSent, setForgotSent] = useState(false)
 
   // Reset password fields
   const [resetPassword, setResetPassword] = useState('')
@@ -56,7 +60,7 @@ function AuthForm() {
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const switchMode = (m: 'signup' | 'login' | 'reset') => {
+  const switchMode = (m: 'signup' | 'login' | 'forgot' | 'reset') => {
     setMode(m)
     setAlert(null)
     setErrors({})
@@ -221,23 +225,29 @@ function AuthForm() {
 
   // ── Forgot password ───────────────────────────────────────────────────────
 
-  const handleForgot = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    const email = loginIdentifier.trim()
-    if (!isEmail(email)) {
-      setErrors({ loginIdentifier: true })
-      setAlert({ msg: 'Enter your email address first, then click Forgot Password.', type: 'error' })
+  const handleForgotSubmit = async () => {
+    if (!isEmail(forgotEmail.trim())) {
+      setErrors({ forgotEmail: true })
       return
     }
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/auth/reset',
-    })
-    setAlert({ msg: 'Password reset email sent! Check your inbox.', type: 'success' })
+    setLoading(true)
+    try {
+      await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: window.location.origin + '/auth/reset',
+      })
+      setForgotSent(true)
+    } catch {
+      setAlert({ msg: 'Something went wrong. Please try again.', type: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter') return
-    mode === 'login' ? handleLogin() : handleSignup()
+    if (mode === 'login') handleLogin()
+    else if (mode === 'forgot') handleForgotSubmit()
+    else if (mode === 'signup') handleSignup()
   }
 
   function usernameStatus() {
@@ -427,7 +437,7 @@ function AuthForm() {
 
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <a href="#" className="forgot-link" onClick={handleForgot}>Forgot password?</a>
+                <a href="#" className="forgot-link" onClick={(e) => { e.preventDefault(); switchMode('forgot') }}>Forgot password?</a>
                 <div className="input-wrap">
                   <input
                     className={`form-input${errors.loginPassword ? ' error' : ''}`}
@@ -458,6 +468,56 @@ function AuthForm() {
               <div className="auth-footer-text" style={{ marginTop: 20 }}>
                 Don&apos;t have an account?{' '}
                 <a href="#" onClick={(e) => { e.preventDefault(); switchMode('signup') }}>Sign up free</a>
+              </div>
+            </div>
+          )}
+
+          {/* ── FORGOT PASSWORD ── */}
+          {mode === 'forgot' && !forgotSent && (
+            <div>
+              <div className="auth-heading">RESET PASSWORD</div>
+              <div className="auth-subheading">// Enter your email and we'll send a reset link</div>
+
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  className={`form-input${errors.forgotEmail ? ' error' : ''}`}
+                  type="email"
+                  placeholder="you@example.com"
+                  value={forgotEmail}
+                  onChange={(e) => { setForgotEmail(e.target.value); setErrors({}) }}
+                  autoComplete="email"
+                  autoFocus
+                />
+                {errors.forgotEmail && <div className="form-error show">Enter a valid email address</div>}
+              </div>
+
+              <button
+                className={`submit-btn${loading ? ' loading' : ''}`}
+                onClick={handleForgotSubmit}
+                disabled={loading}
+              >
+                <span className="btn-text">Send Reset Link →</span>
+                <div className="btn-spinner" />
+              </button>
+              <div className="auth-footer-text" style={{ marginTop: 20 }}>
+                <a href="#" onClick={(e) => { e.preventDefault(); switchMode('login') }}>← Back to login</a>
+              </div>
+            </div>
+          )}
+
+          {mode === 'forgot' && forgotSent && (
+            <div className="success-state">
+              <div className="success-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div className="success-title">CHECK YOUR EMAIL</div>
+              <div className="success-text">
+                We sent a reset link to <strong>{forgotEmail}</strong>.<br />
+                Click it to set a new password.
+              </div>
+              <div className="auth-footer-text" style={{ marginTop: 24 }}>
+                <a href="#" onClick={(e) => { e.preventDefault(); switchMode('login') }}>← Back to login</a>
               </div>
             </div>
           )}

@@ -38,15 +38,25 @@ interface UserStatus {
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-function makeLink(name: string): string {
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
+interface PriceInfo { price: string; source: string }
+
+function makeLink(name: string, priceInfo?: PriceInfo): string {
   const q = encodeURIComponent(name.trim())
   const amazon  = `https://www.amazon.com/s?k=${q}&tag=${TAG}`
   const newegg  = `https://www.newegg.com/p/pl?d=${q}`
   const bestbuy = `https://www.bestbuy.com/site/searchpage.jsp?st=${q}`
   const bh      = `https://www.bhphotovideo.com/c/search?q=${q}`
+  const priceChip = priceInfo
+    ? `<span class="product-price-badge">${escapeHtml(priceInfo.price)}<span class="product-price-source"> · ${escapeHtml(priceInfo.source)}</span></span>`
+    : ''
   return (
     `<span class="product-wrap">` +
-      `<strong class="product-name">${name}</strong>` +
+      `<strong class="product-name">${escapeHtml(name)}</strong>` +
+      priceChip +
       `<span class="product-links">` +
         `<a href="${amazon}"  target="_blank" rel="noopener sponsored"    class="plink plink-amz">Amazon</a>` +
         `<a href="${newegg}"  target="_blank" rel="noopener noreferrer"   class="plink plink-new">Newegg</a>` +
@@ -57,9 +67,16 @@ function makeLink(name: string): string {
   )
 }
 
-function addLinks(html: string): string {
+function extractPartNames(markdown: string): string[] {
+  const matches = [...markdown.matchAll(/\[\[([^\]]+)\]\]/g)]
+  return [...new Set(matches.map((m) => m[1].trim()))]
+}
+
+function addLinks(html: string, partPrices?: Record<string, PriceInfo>): string {
   // 1. [[Product Name]] markers from the AI — highest priority, most reliable
-  let r = html.replace(/\[\[([^\]]+)\]\]/g, (_match, name) => makeLink(name))
+  let r = html.replace(/\[\[([^\]]+)\]\]/g, (_match, name) =>
+    makeLink(name, partPrices?.[name.trim().toLowerCase()])
+  )
 
   // Track everything already wrapped so regexes don't double-link
   const linked = new Set<string>()
@@ -195,6 +212,8 @@ function ChatApp() {
   const [showSaveBanner, setShowSaveBanner] = useState(false)
   const [saveBannerBuildId, setSaveBannerBuildId] = useState<string | null>(null)
   const [confirmDeleteChatId, setConfirmDeleteChatId] = useState<string | null>(null)
+  // Real prices fetched after each build completes: msgId → { 'rtx 4070 super' → { price, source } }
+  const [msgPrices, setMsgPrices] = useState<Record<string, Record<string, PriceInfo>>>({})
 
   const [userId, setUserId] = useState<string | null>(null)
   const [profileUsername, setProfileUsername] = useState<string | null>(null)
@@ -416,6 +435,25 @@ function ChatApp() {
     } catch { /* noop — build save is best-effort */ }
   }
 
+  async function fetchBuildPrices(rawText: string, msgId: string) {
+    const parts = extractPartNames(rawText)
+    if (!parts.length) return
+    const prices: Record<string, PriceInfo> = {}
+    await Promise.all(
+      parts.map(async (part) => {
+        try {
+          const res = await fetch(`/api/prices?q=${encodeURIComponent(part)}`)
+          if (!res.ok) return
+          const data = await res.json()
+          if (data.price) prices[part.toLowerCase()] = { price: data.price, source: data.source ?? '' }
+        } catch { /* non-fatal */ }
+      })
+    )
+    if (Object.keys(prices).length) {
+      setMsgPrices((prev) => ({ ...prev, [msgId]: prices }))
+    }
+  }
+
   function updateChats(updated: Chat[]) {
     setChats(updated)
     saveChats(updated)
@@ -503,9 +541,7 @@ function ChatApp() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    setIsGuest(true)
-    setUserStatus(null)
-    router.refresh()
+    window.location.href = '/auth?mode=login'
   }
 
   // ── Copy message ──────────────────────────────────────────────
@@ -749,6 +785,8 @@ function ChatApp() {
       })
       // Auto-save as a shareable public build (fire-and-forget)
       maybeAutoSaveBuild(rawText, asstId, msg, chatId)
+      // Fetch real Amazon prices for all [[Part Name]] markers (fire-and-forget)
+      fetchBuildPrices(rawText, asstId)
       if (!isGuest) fetchUserStatus()
     } catch {
       setChats((prev) => {
@@ -1083,6 +1121,7 @@ function ChatApp() {
                 copiedId={copiedId}
                 thumbs={thumbs}
                 isStreaming={isStreaming}
+                partPrices={msgPrices[m.id]}
                 onCopy={() => copyMessage(m.id, m.content)}
                 onRegenerate={!isStreaming ? regenerateLast : undefined}
                 onEdit={m.role === 'user' && !isStreaming ? () => editMessage(m.id) : undefined}
@@ -1270,6 +1309,7 @@ interface MessageRowProps {
   copiedId: string | null
   thumbs: Record<string, 'up' | 'down'>
   isStreaming: boolean
+  partPrices?: Record<string, PriceInfo>
   onCopy: () => void
   onRegenerate?: () => void
   onEdit?: () => void
@@ -1283,6 +1323,7 @@ function MessageRow({
   copiedId,
   thumbs,
   isStreaming,
+  partPrices,
   onCopy,
   onRegenerate,
   onEdit,
@@ -1320,7 +1361,7 @@ function MessageRow({
 
   const renderedHTML =
     m.role === 'assistant'
-      ? addLinks(marked.parse(m.content) as string) +
+      ? addLinks(marked.parse(m.content) as string, partPrices) +
         (m.streaming ? '<span class="stream-cursor"></span>' : '')
       : escapeHTML(m.content)
 

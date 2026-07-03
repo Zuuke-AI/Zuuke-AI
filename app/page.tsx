@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import BgCanvas from '@/components/BgCanvas'
+import MotionFX from '@/components/MotionFX'
 import SiteNav from '@/components/SiteNav'
 import { createBrowserClient } from '@/lib/supabase'
 
@@ -86,6 +87,21 @@ const BUILDS = [
     reason: 'Built for serious creators. CUDA-accelerated exports, massive RAM for multitasking, GPU with future 4K gaming headroom.',
     promptHint: 'Build me a creator workstation for $1,800 to $1,900, optimized for 4K video editing in Premiere Pro and DaVinci Resolve.',
   },
+]
+
+// ── Ticker Data ───────────────────────────────────────────────────
+
+const TICKER = [
+  { name: 'RTX 5090', price: '$1,999', dir: 'up' },
+  { name: 'RTX 4070 Super', price: '$549', dir: 'down' },
+  { name: 'Ryzen 7 9800X3D', price: '$479', dir: 'up' },
+  { name: 'RX 9070 XT', price: '$649', dir: 'down' },
+  { name: 'Ryzen 5 7600X', price: '$189', dir: 'down' },
+  { name: 'Samsung 990 Pro 2TB', price: '$149', dir: 'down' },
+  { name: 'Core Ultra 7 265K', price: '$379', dir: 'up' },
+  { name: 'RTX 5070 Ti', price: '$829', dir: 'up' },
+  { name: '32GB DDR5-6000', price: '$94', dir: 'down' },
+  { name: 'Corsair RM850e', price: '$99', dir: 'down' },
 ]
 
 // ── Comparison Data ───────────────────────────────────────────────
@@ -192,6 +208,7 @@ export default function LandingPage() {
   return (
     <>
       <BgCanvas opacity={0.5} particleCount={100} connectDistance={120} />
+      <MotionFX />
 
       {/* ── Promo Banner ── */}
       <div className="promo-banner">
@@ -241,6 +258,24 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* ── PARTS TICKER ── */}
+      <div className="ticker-strip" aria-hidden="true">
+        <div className="ticker-track">
+          {[0, 1].map((copy) => (
+            <span className="ticker-group" key={copy}>
+              {TICKER.map((t, i) => (
+                <span className="ticker-item" key={i}>
+                  {t.name} <b>{t.price}</b>
+                  <span className={t.dir === 'up' ? 'tick-up' : 'tick-down'}>
+                    {t.dir === 'up' ? '▲' : '▼'}
+                  </span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* ── 2. INTERACTIVE BUILDER ── */}
       <section className="builder-section" id="builder" style={{ position: 'relative', zIndex: 1 }}>

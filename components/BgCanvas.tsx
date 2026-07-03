@@ -8,6 +8,9 @@ interface Props {
   connectDistance?: number
 }
 
+const MOUSE_REPEL = 130   // px radius particles are pushed away from the cursor
+const MOUSE_LINK = 170    // px radius for cursor-to-particle connection lines
+
 export default function BgCanvas({ opacity = 0.5, particleCount = 80, connectDistance = 110 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -17,8 +20,12 @@ export default function BgCanvas({ opacity = 0.5, particleCount = 80, connectDis
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const coarse = window.matchMedia('(hover: none), (pointer: coarse)').matches
+
     let W = 0, H = 0
-    let animId: number
+    let animId = 0
+    const mouse = { x: -9999, y: -9999 }
 
     interface Particle {
       x: number; y: number; vx: number; vy: number
@@ -45,6 +52,15 @@ export default function BgCanvas({ opacity = 0.5, particleCount = 80, connectDis
         this.ph = Math.random() * Math.PI * 2
       }
       update() {
+        // Cursor repulsion — particles drift away from the pointer
+        const dx = this.x - mouse.x
+        const dy = this.y - mouse.y
+        const d = Math.sqrt(dx * dx + dy * dy)
+        if (d < MOUSE_REPEL && d > 0.001) {
+          const f = ((MOUSE_REPEL - d) / MOUSE_REPEL) * 0.6
+          this.x += (dx / d) * f
+          this.y += (dy / d) * f
+        }
         this.x += this.vx; this.y += this.vy; this.ph += 0.018
         if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset()
       }
@@ -83,17 +99,73 @@ export default function BgCanvas({ opacity = 0.5, particleCount = 80, connectDis
       }
     }
 
-    const loop = () => {
+    // Cursor web — lines from the pointer to nearby particles
+    const connectMouse = () => {
+      if (mouse.x < 0) return
+      for (const p of particles) {
+        const dx = p.x - mouse.x
+        const dy = p.y - mouse.y
+        const d = Math.sqrt(dx * dx + dy * dy)
+        if (d < MOUSE_LINK) {
+          ctx.beginPath()
+          ctx.moveTo(mouse.x, mouse.y)
+          ctx.lineTo(p.x, p.y)
+          ctx.strokeStyle = `rgba(0,212,255,${0.18 * (1 - d / MOUSE_LINK)})`
+          ctx.lineWidth = 0.5
+          ctx.stroke()
+        }
+      }
+    }
+
+    const drawFrame = () => {
       ctx.clearRect(0, 0, W, H)
       drawGrid()
       particles.forEach(p => { p.update(); p.draw() })
       connect()
+      connectMouse()
+    }
+
+    // Reduced motion: render one static frame, no animation loop
+    if (reduced) {
+      drawFrame()
+      return () => window.removeEventListener('resize', resize)
+    }
+
+    const onPointerMove = (e: PointerEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
+    const onPointerLeave = () => { mouse.x = -9999; mouse.y = -9999 }
+    if (!coarse) {
+      document.addEventListener('pointermove', onPointerMove, { passive: true })
+      document.documentElement.addEventListener('pointerleave', onPointerLeave)
+    }
+
+    let running = true
+    const loop = () => {
+      if (!running) return
+      drawFrame()
       animId = requestAnimationFrame(loop)
     }
     loop()
 
+    // Pause rendering when the tab is hidden
+    const onVisibility = () => {
+      if (document.hidden) {
+        running = false
+        cancelAnimationFrame(animId)
+      } else if (!running) {
+        running = true
+        loop()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     return () => {
+      running = false
       window.removeEventListener('resize', resize)
+      document.removeEventListener('visibilitychange', onVisibility)
+      if (!coarse) {
+        document.removeEventListener('pointermove', onPointerMove)
+        document.documentElement.removeEventListener('pointerleave', onPointerLeave)
+      }
       cancelAnimationFrame(animId)
     }
   }, [particleCount, connectDistance])

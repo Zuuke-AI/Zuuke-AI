@@ -51,6 +51,8 @@ function ResetForm() {
     try {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
+      // Sign out the recovery session so the user must log in with their new password
+      await supabase.auth.signOut()
       setDone(true)
     } catch (err) {
       setAlert({ msg: (err as Error).message || 'Something went wrong.', type: 'error' })
@@ -153,7 +155,7 @@ function ResetForm() {
               </div>
               <div className="success-title">PASSWORD UPDATED</div>
               <div className="success-text">Your password has been changed successfully.</div>
-              <button className="submit-btn" style={{ marginTop: 24 }} onClick={() => router.push('/auth?mode=login')}>
+              <button className="submit-btn" style={{ marginTop: 24 }} onClick={() => { window.location.href = '/auth?mode=login' }}>
                 <span className="btn-text">Sign In →</span>
               </button>
             </div>

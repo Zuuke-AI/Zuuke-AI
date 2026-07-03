@@ -21,6 +21,7 @@ export default function Cursor() {
       mx = e.clientX; my = e.clientY
       dot.style.left = mx + 'px'
       dot.style.top = my + 'px'
+      document.body.classList.remove('cursor-hidden')
     }
 
     const animRing = () => {
@@ -31,11 +32,25 @@ export default function Cursor() {
       animId = requestAnimationFrame(animRing)
     }
 
+    const onDown = () => document.body.classList.add('cursor-down')
+    const onUp = () => document.body.classList.remove('cursor-down')
+    const onLeave = () => document.body.classList.add('cursor-hidden')
+    const onEnter = () => document.body.classList.remove('cursor-hidden')
+
     document.addEventListener('mousemove', onMove)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('mouseup', onUp)
+    document.documentElement.addEventListener('mouseleave', onLeave)
+    document.documentElement.addEventListener('mouseenter', onEnter)
     animRing()
 
     return () => {
       document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('mouseup', onUp)
+      document.documentElement.removeEventListener('mouseleave', onLeave)
+      document.documentElement.removeEventListener('mouseenter', onEnter)
+      document.body.classList.remove('cursor-down', 'cursor-hidden')
       cancelAnimationFrame(animId)
     }
   }, [])

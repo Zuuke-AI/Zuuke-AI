@@ -300,39 +300,45 @@ function SettingsContent() {
   // ── Cancel subscription ────────────────────────────────────────────────────
   async function cancelSubscription() {
     setCancellingSub(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const res = await fetch('/api/profile/delete-account', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-    if (res.ok) {
-      setSubscriptionStatus('free')
-      setShowCancelConfirm(false)
-      setAlert({ msg: '✓ Subscription cancelled. You\'re now on the free plan.', type: 'success', section: 'sub' })
-    } else {
-      setAlert({ msg: (await res.json()).error ?? 'Failed to cancel.', type: 'error', section: 'sub' })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/profile/delete-account', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        setSubscriptionStatus('free')
+        setShowCancelConfirm(false)
+        setAlert({ msg: '✓ Subscription cancelled. You\'re now on the free plan.', type: 'success', section: 'sub' })
+      } else {
+        setAlert({ msg: (await res.json()).error ?? 'Failed to cancel.', type: 'error', section: 'sub' })
+      }
+    } finally {
+      setCancellingSub(false)
     }
-    setCancellingSub(false)
   }
 
   // ── Delete account ─────────────────────────────────────────────────────────
   async function deleteAccount() {
     if (deleteConfirm !== 'DELETE') return
     setDeleting(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const res = await fetch('/api/profile/delete-account', {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-    if (res.ok) {
-      await supabase.auth.signOut()
-      router.push('/?deleted=1')
-    } else {
-      setAlert({ msg: (await res.json()).error ?? 'Failed to delete account.', type: 'error' })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/profile/delete-account', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        await supabase.auth.signOut()
+        window.location.href = '/?deleted=1'
+      } else {
+        setAlert({ msg: (await res.json()).error ?? 'Failed to delete account.', type: 'error' })
+        setShowDeleteModal(false)
+      }
+    } finally {
       setDeleting(false)
-      setShowDeleteModal(false)
     }
   }
 

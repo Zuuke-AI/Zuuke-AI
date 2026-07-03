@@ -67,7 +67,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bebasNeue.variable} ${rajdhani.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${bebasNeue.variable} ${rajdhani.variable} ${jetbrainsMono.variable}`}>
       <body>
         {/* Google Analytics */}
         <Script

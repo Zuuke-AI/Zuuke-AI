@@ -452,6 +452,8 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 .plink::before { content: '·'; margin: 0 4px; color: #2a3a44; }
 .plink:hover { color: var(--cyan); }
 .plink-amz, .plink-new, .plink-bb, .plink-bh { background: none; border: none; padding: 0; border-radius: 0; }
+.product-price-badge { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #22d95e; letter-spacing: 0.04em; margin-right: 8px; white-space: nowrap; }
+.product-price-source { font-weight: 400; color: var(--mist); font-size: 10px; }
 .msg-text blockquote { border-left: 2px solid var(--cyan); margin: 0.8em 0; padding: 4px 0 4px 16px; color: var(--mist); font-style: italic; }
 .msg-text table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 13px; }
 .msg-text th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--cyan); font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); font-weight: 400; }
@@ -3415,3 +3417,165 @@ footer { border-top: 1px solid var(--border); padding: 40px 48px; display: flex;
 /* ── Profile badges ─────────────────────────────────────────────────── */
 .profile-badges-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .profile-badge { display: inline-block; font-family: var(--font-body); font-size: 11px; padding: 3px 10px; background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.18); color: var(--mist); border-radius: 100px; white-space: nowrap; }
+
+/* ══════════════════════════════════════════════════════════════════
+   DESIGN UPGRADE — states, motion & interactivity layer
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. STATES FIRST — keyboard focus, press feedback ──────────── */
+
+/* Global focus ring for keyboard users */
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 2px; }
+
+/* Clip-path elements clip outlines — use inset ring instead */
+.btn-primary:focus-visible, .btn-secondary:focus-visible, .nav-cta:focus-visible,
+.price-btn:focus-visible, .builder-cta-btn:focus-visible, .budget-pill:focus-visible,
+.usecase-card:focus-visible, .goal-pill:focus-visible, .build-try-btn:focus-visible,
+.new-chat-btn:focus-visible, .submit-btn:focus-visible, .auth-tab:focus-visible,
+.send-btn:focus-visible, .chat-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--cyan), 0 0 16px var(--cyan-glow);
+}
+.form-input:focus-visible, .input-field:focus-visible {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 1px var(--cyan), 0 0 0 3px rgba(0,212,255,0.1);
+}
+
+/* Press states — every button gives physical feedback */
+.btn-primary:active { transform: translateY(-1px) scale(0.985); transition-duration: 0.08s; }
+.btn-secondary:active, .nav-cta:active, .price-btn:active,
+.build-try-btn:active, .new-chat-btn:active, .submit-btn:active { transform: scale(0.975); transition-duration: 0.08s; }
+.budget-pill:active, .usecase-card:active, .goal-pill:active { transform: scale(0.97); transition-duration: 0.08s; }
+.builder-cta-btn.ready:active { transform: translateY(0) scale(0.98); }
+.send-btn:active { transform: scale(0.9); }
+.msg-action-btn:active { transform: scale(0.92); }
+
+/* ── 2. CURSOR upgrades ────────────────────────────────────────── */
+.cursor-dot, .cursor-ring { transition-property: width, height, border-color, opacity, background; transition-duration: 0.25s, 0.25s, 0.2s, 0.3s, 0.2s; }
+body.cursor-hidden .cursor-dot, body.cursor-hidden .cursor-ring { opacity: 0; }
+body.cursor-down .cursor-dot { background: var(--orange); box-shadow: 0 0 14px var(--orange); }
+body.cursor-down .cursor-ring { width: 26px !important; height: 26px !important; border-color: var(--orange); }
+
+/* ── 3. SPOTLIGHT — radial glow tracks the mouse on cards ─────── */
+.build-card-v2, .feature-card, .usecase-card, .price-card, .budget-pill, .goal-pill { position: relative; }
+.build-card-v2::after, .feature-card::after, .usecase-card::after,
+.price-card::after, .budget-pill::after, .goal-pill::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), rgba(0,212,255,0.09), transparent 65%);
+  z-index: 0;
+}
+.build-card-v2:hover::after, .feature-card:hover::after, .usecase-card:hover::after,
+.price-card:hover::after, .budget-pill:hover::after, .goal-pill:hover::after { opacity: 1; }
+.build-card-v2 > *, .feature-card > *, .price-card > * { position: relative; z-index: 1; }
+
+/* ── 4. SCROLL PROGRESS BAR ────────────────────────────────────── */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--cyan), #7dd8f0, var(--orange));
+  transform-origin: left;
+  transform: scaleX(0);
+  z-index: 2000;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(0,212,255,0.5);
+}
+
+/* ── 5. TICKER — live parts strip under hero ───────────────────── */
+.ticker-strip {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background: rgba(8,11,16,0.75);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  padding: 13px 0;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ticker-scroll 46s linear infinite;
+  will-change: transform;
+}
+.ticker-group { display: inline-flex; gap: 48px; padding-right: 48px; }
+.ticker-strip:hover .ticker-track { animation-play-state: paused; }
+.ticker-item {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--mist);
+}
+.ticker-item b { color: var(--white); font-weight: 500; }
+.ticker-item .tick-up { color: #22c55e; font-size: 9px; }
+.ticker-item .tick-down { color: var(--danger); font-size: 9px; }
+@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ── 6. REVEAL upgrades — score bars grow, tags stagger in ─────── */
+.build-card-v2 .build-score-fill { transform: scaleX(0); transform-origin: left; transition: transform 1.1s var(--ease) 0.35s; }
+.build-card-v2.visible .build-score-fill { transform: scaleX(1); }
+.build-card-v2 .build-tag { opacity: 0; transform: translateY(6px); transition: opacity 0.4s ease, transform 0.4s var(--ease); }
+.build-card-v2.visible .build-tag { opacity: 1; transform: none; }
+.build-card-v2.visible .build-tag:nth-child(1) { transition-delay: 0.25s; }
+.build-card-v2.visible .build-tag:nth-child(2) { transition-delay: 0.33s; }
+.build-card-v2.visible .build-tag:nth-child(3) { transition-delay: 0.41s; }
+.build-card-v2.visible .build-tag:nth-child(4) { transition-delay: 0.49s; }
+.build-card-v2 .build-spec-row { opacity: 0; transform: translateX(-8px); transition: opacity 0.45s ease, transform 0.45s var(--ease); }
+.build-card-v2.visible .build-spec-row { opacity: 1; transform: none; }
+.build-card-v2.visible .build-spec-row:nth-child(1) { transition-delay: 0.1s; }
+.build-card-v2.visible .build-spec-row:nth-child(2) { transition-delay: 0.18s; }
+.build-card-v2.visible .build-spec-row:nth-child(3) { transition-delay: 0.26s; }
+
+/* ── 7. HERO — periodic glitch on the stroked line ─────────────── */
+.hero-title .line-3 { animation: hero-glitch 7s steps(1) infinite 3s; }
+@keyframes hero-glitch {
+  0%, 100% { transform: none; text-shadow: none; }
+  1% { transform: translateX(-3px) skewX(-2deg); text-shadow: 3px 0 var(--cyan), -3px 0 var(--danger); }
+  2% { transform: translateX(2px); text-shadow: -3px 0 var(--cyan), 3px 0 var(--danger); }
+  3% { transform: none; text-shadow: none; }
+  4.5% { transform: translateX(-1px) skewX(1.5deg); text-shadow: 2px 0 var(--cyan); }
+  5.5% { transform: none; text-shadow: none; }
+}
+.hero-title, .hero-sub { will-change: transform; }
+
+/* ── 8. FEATURED PRICE CARD — breathing glow ───────────────────── */
+.price-card.featured { animation: featured-breathe 4s ease-in-out infinite; }
+@keyframes featured-breathe {
+  0%, 100% { box-shadow: 0 0 0 rgba(0,212,255,0); }
+  50% { box-shadow: 0 0 42px rgba(0,212,255,0.12), inset 0 0 24px rgba(0,212,255,0.03); }
+}
+
+/* ── 9. TRUST CHIPS — staggered float-in + idle hover ──────────── */
+.trust-chip { transition: border-color 0.25s ease, transform 0.25s var(--ease), box-shadow 0.25s ease; }
+.trust-chip:hover { border-color: rgba(0,212,255,0.5); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,212,255,0.08); }
+
+/* Why-table row hover scan */
+.why-table-row { transition: background 0.2s ease; }
+.why-table-row:hover { background: rgba(0,212,255,0.04); }
+
+/* Suggestion cards on chat — lift + glow */
+.sug-card { transition: transform 0.25s var(--ease), border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease; }
+.sug-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.06); }
+
+/* ── 10. REDUCED MOTION — respect the user, always ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto !important; }
+  .step, .terminal, .feature-card, .build-card-v2, .price-card, .demo-chat,
+  .builder-inner, .why-col, .builds-grid, .why-cols, .features-grid,
+  .build-card-v2 .build-tag, .build-card-v2 .build-spec-row {
+    opacity: 1 !important; transform: none !important;
+  }
+  .build-card-v2 .build-score-fill { transform: scaleX(1) !important; }
+  .ticker-track { animation: none !important; }
+  .scroll-progress { display: none; }
+}
+
+/* Parallax fix — release transform after entrance so inline parallax applies */
+.hero-title, .hero-sub, .hero-actions, .hero-eyebrow { animation-fill-mode: backwards; }

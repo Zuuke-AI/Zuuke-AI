@@ -695,6 +695,26 @@ function ChatApp() {
         setShowLimitModal(true)
         return
       }
+      if (res.status === 400) {
+        const data = await res.json().catch(() => null)
+        setChats((prev) => {
+          const updated = prev.map((c) => {
+            if (c.id !== currentChatId) return c
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === asstId
+                  ? { ...m, content: data?.message || 'That message could not be sent.', streaming: false }
+                  : m
+              ),
+            }
+          })
+          saveChats(updated)
+          return updated
+        })
+        setIsStreaming(false)
+        return
+      }
       if (!res.ok) throw new Error('Server error')
 
       const reader = res.body!.getReader()
@@ -1202,6 +1222,7 @@ function ChatApp() {
               className="input-field"
               placeholder="Budget, use case, parts you own…"
               rows={1}
+              maxLength={6000}
               onKeyDown={handleKeyDown}
               onInput={(e) => adjustHeight(e.currentTarget)}
             />

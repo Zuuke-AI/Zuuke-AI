@@ -1,8 +1,31 @@
 export const dynamic = 'force-dynamic'
 
-import { getUserFromRequest, checkMessageLimit } from '@/lib/auth'
+import { getUserFromRequest, checkMessageLimit, checkGuestLimit, getClientIp } from '@/lib/auth'
 import { getAnthropicClient, getSystemPrompt } from '@/lib/anthropic'
 import { createServerClient } from '@/lib/supabase'
+
+// Bounds on request shape — the client already limits these in the UI, but
+// that's UX only. Anyone can call this endpoint directly, so the real
+// enforcement (and the only thing standing between a scripted request and an
+// unbounded Anthropic bill) has to live here.
+const MAX_MESSAGES = 30
+const MAX_MESSAGE_CHARS = 6000
+const MAX_TOTAL_CHARS = 16000
+
+interface ChatMessage { role: string; content: string }
+
+function validateMessages(input: unknown): input is ChatMessage[] {
+  if (!Array.isArray(input) || input.length === 0 || input.length > MAX_MESSAGES) return false
+  let total = 0
+  for (const m of input) {
+    if (typeof m !== 'object' || m === null) return false
+    const { role, content } = m as Record<string, unknown>
+    if (role !== 'user' && role !== 'assistant') return false
+    if (typeof content !== 'string' || content.length === 0 || content.length > MAX_MESSAGE_CHARS) return false
+    total += content.length
+  }
+  return total <= MAX_TOTAL_CHARS
+}
 
 export async function POST(request: Request) {
   const user = await getUserFromRequest(request)
@@ -16,13 +39,26 @@ export async function POST(request: Request) {
         { status: 429 }
       )
     }
+  } else {
+    // Guest users (no auth token) — enforced server-side by IP.
+    // The client's localStorage counter is UX only and cannot be trusted.
+    const { allowed } = await checkGuestLimit(getClientIp(request))
+    if (!allowed) {
+      return Response.json(
+        { error: 'limit_reached', message: 'Guest limit reached. Sign in for more free messages.' },
+        { status: 429 }
+      )
+    }
   }
-  // Guest users (no auth token): allowed through — client enforces 5-message session limit
 
-  const { messages } = await request.json()
-  if (!messages?.length) {
-    return Response.json({ error: 'messages required' }, { status: 400 })
+  const body = await request.json().catch(() => null)
+  if (!validateMessages(body?.messages)) {
+    return Response.json(
+      { error: 'invalid_request', message: 'Message too long or malformed. Try shortening your message or starting a new chat.' },
+      { status: 400 }
+    )
   }
+  const messages = body.messages as ChatMessage[]
 
   // Fetch owned parts for personalised system prompt (logged-in users only)
   let ownedParts: string | undefined
